@@ -1,7 +1,7 @@
 #=======================================================
 # FHI-aims file: assets/compressed_sensing/tmp/Geo_ZB_OZn.in
 # Created using the Atomic Simulation Environment (ASE)
-# Fri Feb  7 17:38:13 2020
+# Thu Feb 13 16:59:32 2020
 #=======================================================
 lattice_vector 0.0000000000000000 6.7395000000000005 6.7395000000000005 
 lattice_vector 6.7395000000000005 0.0000000000000000 6.7395000000000005 

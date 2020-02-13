@@ -581,9 +581,9 @@ def Visualize(data_df, structure_filenames=[], log_string='No Log File', palette
     if (structure_filenames == [] or structure_filenames == None):
         print("The interface will not have jmol because no structure_filenames were passed in")
         page = file_html(layout, CDN)
-        with open('visualize.html', 'w') as f:
+        with open('./visualize.html', 'w') as f:
             f.write(page)
-        view('visualize.html')
+        view('./visualize.html')
         return
 
     script, div = components(layout)
@@ -724,14 +724,14 @@ def Visualize(data_df, structure_filenames=[], log_string='No Log File', palette
 
     print('Writing file dependencies...')
 
-    with open('visualize.html', 'w') as f:
+    with open('./visualize.html', 'w') as f:
         f.write(page)
 
     writePop()
     writeCompare()
     writeMyJmol()
 
-    view('visualize.html')
+    view('./visualize.html')
 
     print('Done.')
 

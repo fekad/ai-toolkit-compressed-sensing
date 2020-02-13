@@ -1,7 +1,7 @@
 #=======================================================
 # FHI-aims file: assets/compressed_sensing/tmp/Geo_RS_BaSe.in
 # Created using the Atomic Simulation Environment (ASE)
-# Fri Feb  7 17:38:10 2020
+# Thu Feb 13 16:59:29 2020
 #=======================================================
 lattice_vector 0.0000000000000000 9.7124999999999986 9.7124999999999986 
 lattice_vector 9.7124999999999986 0.0000000000000000 9.7124999999999986 
