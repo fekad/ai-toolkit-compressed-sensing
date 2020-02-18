@@ -1,9 +1,13 @@
 {
   "authors": [
-    "John, Doe",
-    "Bob, Alice"
+    "Emre Ahmetcik",
+    " Angelo Ziletti",
+    "Runhai Ouyang",
+    "Luca Ghiringhelli",
+    "Matthias Scheffler"
+    
   ],
-  "email": "user@domain.com",
+  "email": "ghiringhelli@fhi-berlin.mpg.de",
   "title": "Title of the tutorial",
   "description": "In this tutorial we will ...",
   "url": "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-tutorial-template",
