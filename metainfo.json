@@ -1,17 +1,16 @@
 {
   "authors": [
     "Emre Ahmetcik",
-    " Angelo Ziletti",
+    "Angelo Ziletti",
     "Runhai Ouyang",
     "Luca Ghiringhelli",
     "Matthias Scheffler"
-    
   ],
   "email": "ghiringhelli@fhi-berlin.mpg.de",
-  "title": "Title of the tutorial",
-  "description": "In this tutorial we will ...",
-  "url": "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-tutorial-template",
-  "link": "https://analytics-toolkit.nomad-coe.eu/hub/user-redirect/notebooks/tutorials/Welcome.ipynb",
+  "title": "Compressed sensing",
+  "description": "In this tutorial we will show how to find descriptive parameters to predict materials properties using compressed sensing tools. The relative stability of the zincblende (ZB) versus rocksalt (RS) structure of binary materials is predicted with compressed sensing methods and compared against a model trained with kernel ridge regression.",
+  "url": "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-compressed-sensing",
+  "link": "https://analytics-toolkit.nomad-coe.eu/hub/user/lsbailo/notebooks/tutorials/compressed_sensing.ipynb",
   "created": "",
   "updated": "",
   "flags":{
@@ -21,20 +20,21 @@
   },
   "labels": {
     "application_keyword": [
-      "keyword1",
-      "keyword2"
+      "Lasso",
+      "Sisso",
+      "Kernel ridge regression"
     ],
     "application_section": [
       "Materials property prediction"
     ],
     "application_system": [
-      "System"
+      "Zincblende (ZB) versus rocksalt (RS) materials"
     ],
     "category": [
       "Tutorial"
     ],
     "data_analytics_method": [
-      "Clustering"
+      "Compressed sensing"
     ],
     "platform": [
       "jupyter"
