@@ -20,21 +20,22 @@
   },
   "labels": {
     "application_keyword": [
-      "Lasso",
-      "Sisso",
-      "Kernel ridge regression"
+      "Compressed sensing",
+      "Descriptors"
     ],
     "application_section": [
       "Materials property prediction"
     ],
     "application_system": [
-      "Zincblende (ZB) versus rocksalt (RS) materials"
+      "Octet binary materials"
     ],
     "category": [
       "Tutorial"
     ],
     "data_analytics_method": [
-      "Compressed sensing"
+      "Lasso",
+      "Sisso",
+      "Kernel ridge regression"
     ],
     "platform": [
       "jupyter"
