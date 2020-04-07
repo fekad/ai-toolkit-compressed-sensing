@@ -7,8 +7,8 @@
     "Matthias Scheffler"
   ],
   "email": "ghiringhelli@fhi-berlin.mpg.de",
-  "title": "Compressed sensing",
-  "description": "In this tutorial we will show how to find descriptive parameters to predict materials properties using compressed sensing tools. The relative stability of the zincblende (ZB) versus rocksalt (RS) structure of binary materials is predicted with compressed sensing methods and compared against a model trained with kernel ridge regression.",
+  "title": "Symbolic regression via compressed sensing: a tutorial",
+  "description": "In this tutorial we will show how to find descriptive parameters to predict materials properties using symbolic regrression combined with compressed sensing tools. The relative stability of the zincblende (ZB) versus rocksalt (RS) structure of binary materials is predicted and compared against a model trained with kernel ridge regression.",
   "url": "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-compressed-sensing",
   "link": "https://analytics-toolkit.nomad-coe.eu/hub/user/lsbailo/notebooks/tutorials/compressed_sensing/compressed_sensing.ipynb",
   "created": "",
@@ -21,6 +21,7 @@
   "labels": {
     "application_keyword": [
       "Compressed sensing",
+      "Symbolic regression"
       "Descriptors"
     ],
     "application_section": [
@@ -33,8 +34,8 @@
       "Tutorial"
     ],
     "data_analytics_method": [
-      "Lasso",
-      "Sisso",
+      "LASSO",
+      "SISSO",
       "Kernel ridge regression"
     ],
     "platform": [
