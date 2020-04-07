@@ -1,10 +1,10 @@
 {
   "authors": [
-    "Emre Ahmetcik",
-    "Angelo Ziletti",
-    "Runhai Ouyang",
-    "Luca Ghiringhelli",
-    "Matthias Scheffler"
+    "Ahmetcik, Emre",
+    "Ziletti, Angelo",
+    "Ouyang, Runhai",
+    "Ghiringhelli, Luca M.",
+    "Scheffler, Matthias"
   ],
   "email": "ghiringhelli@fhi-berlin.mpg.de",
   "title": "Symbolic regression via compressed sensing: a tutorial",
