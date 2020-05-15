@@ -13,7 +13,7 @@ with open('metainfo.json') as file:
 # numpy==1.13.3
 
 setup(
-    name='tutorial_template',
+    name='compressed_sensing',
     version='1.0',
     author=', '.join(metainfo['authors']),
     author_email=metainfo['email'],
