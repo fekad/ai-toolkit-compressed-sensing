@@ -4,31 +4,7 @@ from jupyter_jsmol import JsmolView
 import numpy as np
 
 
-def generate_structures (RS_structures, ZB_structures):
-    
-    for i in range (len(RS_structures)):
-        bulk_atoms = RS_structures[i].repeat(rep=3).get_chemical_symbols()
-        bulk_positions = RS_structures[i].repeat(rep=3).get_positions()
-        formula = RS_structures[i].get_chemical_formula()
-        file = open("data/compressed_sensing/structures/RS_structures/"+formula+".xyz","w") 
-        file.write ("%d\n\n"%54)
-        for j in range (len(bulk_positions)):
-            file.write (bulk_atoms[j])
-            file.write ("\t%f\t%f\t%f\n"%(bulk_positions[j][0],bulk_positions[j][1],bulk_positions[j][2]))
-        file.close()
-        
-    for i in range (len(ZB_structures)):
-        bulk_atoms = ZB_structures[i].repeat(rep=3).get_chemical_symbols()
-        bulk_positions = ZB_structures[i].repeat(rep=3).get_positions()
-        formula = ZB_structures[i].get_chemical_formula()
-        file = open("data/compressed_sensing/structures/ZB_structures/"+formula+".xyz","w") 
-        file.write ("%d\n\n"%54)
-        for j in range (len(bulk_positions)):
-            file.write (bulk_atoms[j])
-            file.write ("\t%f\t%f\t%f\n"%(bulk_positions[j][0],bulk_positions[j][1],bulk_positions[j][2]))
-        file.close()
-
-def make_plot (df_D, sisso, D_selected_df):
+def make_plot (df_D, sisso, D_selected_df, viewer):
     
     # the features of the plot are taken from the SissoRegressor object
     feat_x = df_D.columns[sisso.l0_selected_indices[1]][0]
@@ -123,27 +99,55 @@ def make_plot (df_D, sisso, D_selected_df):
     scatter_ZB = fig.data[1]
 
 #-------------------------------------------------------------------------------------------------------------------------------
-# Here we create the viewers of the materials structure
+# Here we define the interaction with the jsmol viewer
 
-    view_RS = JsmolView()
-    view_ZB = JsmolView()
+    marker_size = 7
+    RS_npoints = len(D_selected_df.loc[D_selected_df['Structure']=='RS'])
+    ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure']=='ZB'])
+
+    scatter_RS.marker.size = [marker_size] * RS_npoints
+    scatter_RS.marker.symbol = ["circle"] * RS_npoints
 
     def view_structure_RS ( formula ):
-        view_RS.script( "load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
-
+        viewer.script( "load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
+  
     def update_point_RS(trace, points, selector):
         if not points.point_inds:
             return
+        scatter_RS.marker.size = [marker_size] * RS_npoints
+        scatter_RS.marker.symbol = ["circle"] * RS_npoints
+        scatter_ZB.marker.size = [marker_size] * ZB_npoints
+        scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+        sizes = list(scatter_RS.marker.size)
+        symbols = list(scatter_RS.marker.symbol)
+        for i in points.point_inds:
+            sizes[i] = 15
+            symbols[i] = 'x'
+            with fig.batch_update():
+                scatter_RS.marker.size = sizes
+                scatter_RS.marker.symbol = symbols
         point = points.point_inds[0]
-        formula = scatter_RS['text'][point][0]
+        formula = trace['text'][point][0]
         view_structure_RS(formula)
 
     def view_structure_ZB ( formula ):
-        view_ZB.script( "load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
+        viewer.script( "load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
 
     def update_point_ZB(trace, points, selector):
         if not points.point_inds:
             return
+        scatter_RS.marker.size = [marker_size] * RS_npoints
+        scatter_RS.marker.symbol = ["circle"] * RS_npoints
+        scatter_ZB.marker.size = [marker_size] * ZB_npoints
+        scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+        sizes = list(scatter_RS.marker.size)
+        symbols = list(scatter_RS.marker.symbol)
+        for i in points.point_inds:
+            sizes[i] = 15
+            symbols[i] = 'x'
+            with fig.batch_update():
+                scatter_ZB.marker.size = sizes
+                scatter_ZB.marker.symbol = symbols
         point = points.point_inds[0]
         formula = scatter_ZB['text'][point][0]
         view_structure_ZB(formula)
@@ -168,20 +172,5 @@ def make_plot (df_D, sisso, D_selected_df):
 
     )
 
-    viewer_RS = widgets.interactive_output (view_structure_RS, {'formula':dropdown_RS})
-    viewer_ZB = widgets.interactive_output (view_structure_ZB, {'formula':dropdown_ZB})
-
-
-    output_RS = widgets.Output()
-    output_ZB = widgets.Output()
-    with output_RS:    
-        display(dropdown_RS)
-        display(view_RS)
-    with output_ZB:
-        display(dropdown_ZB)
-        display(view_ZB)
-
-    visualizers = widgets.HBox([output_RS,output_ZB])
-    container = widgets.VBox([fig,visualizers])
     
-    return container
+    return fig
