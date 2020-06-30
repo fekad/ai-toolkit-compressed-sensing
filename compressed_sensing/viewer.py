@@ -11,6 +11,8 @@ import itertools
 from bokeh.palettes import Dark2_5 as palette
 
 output_notebook()
+
+
 def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None, legend=None, unit=None):
     # if xs ist not list of lists/arrays make it so, as later the function iterates over xs and ys
     if not isinstance(xs[0], (list, np.ndarray)):
@@ -21,12 +23,12 @@ def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None
     elif not isinstance(xs, list) or not isinstance(ys, list):
         xs = list(xs)
         ys = list(ys)
-        
+
     if unit is None:
         unit = ''
-        
+
     hover = HoverTool(
-            tooltips="""
+        tooltips="""
             <div>
                 <div>
                     <span style="font-size: 15px; font-weight: bold;">@data_point_labels</span>
@@ -40,132 +42,187 @@ def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None
                 </div>
             </div>
             """ % unit
-        )
-    
+    )
 
     colors = itertools.cycle(palette)
-    
-    p = figure(plot_width=600, plot_height=300, tools=[hover, "box_zoom", "pan", "reset"], 
-               x_axis_label=x_label,  y_axis_label=y_label)
-    
+
+    p = figure(plot_width=600, plot_height=300, tools=[hover, "box_zoom", "pan", "reset"],
+               x_axis_label=x_label, y_axis_label=y_label)
+
     # plot reference diagonal
-    xy_min = min([min(arr) for arr in xs+ys])
-    xy_max = max([max(arr) for arr in xs+ys])
+    xy_min = min([min(arr) for arr in xs + ys])
+    xy_max = max([max(arr) for arr in xs + ys])
     p.line([xy_min, xy_max], [xy_min, xy_max])
-    
+
     for i, color in zip(range(len(xs)), colors):
         source = ColumnDataSource(
-                data=dict(
-                    x=xs[i],
-                    y=ys[i],
-                    data_point_labels=data_point_labels[i],
-                    abs_error=abs(np.array(xs[i]) - np.array(ys[i]))
-                )
+            data=dict(
+                x=xs[i],
+                y=ys[i],
+                data_point_labels=data_point_labels[i],
+                abs_error=abs(np.array(xs[i]) - np.array(ys[i]))
             )
-
+        )
 
         p.circle('x', 'y', size=8, source=source, legend=legend[i], color=color)
-    p.legend.location='top_left'
+    p.legend.location = 'top_left'
     show(p)
 
 
+def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
+    # features are obtained from the SissoRegressor object
+    total_features = sisso.n_nonzero_coefs
 
-def make_interactive_plot (df_D, sisso, D_selected_df, viewer):
-    
-    # the features of the plot are taken from the SissoRegressor object
-    feat_x = df_D.columns[sisso.l0_selected_indices[1]][0]
-    feat_y = df_D.columns[sisso.l0_selected_indices[1]][1]
+    features = []
+    for i in range(total_features):
+        features.append(df_D.columns[sisso.l0_selected_indices[total_features - 1]][i])
 
     # coefficients and intercept used to create the line separating the RS vs ZB materials
-    coeff_x = sisso.coefs[sisso.l0_selected_indices[1][0]]
-    coeff_y = sisso.coefs[sisso.l0_selected_indices[1][1]]
+    coefficients = []
+    for i in range(total_features):
+        coefficients.append(sisso.coefs[sisso.l0_selected_indices[total_features - 1][i]])
     intercept = sisso.intercept
 
-    def f_y ( y, coeff_x, coeff_y , intercept):
+    feat_x = widgets.Dropdown(
+        description='x-axis',
+        options=features,
+        value=features[0]
+    )
 
-        return -y*coeff_y/coeff_x - intercept/coeff_x     
+    feat_y = widgets.Dropdown(
+        description='y-axis',
+        options=features,
+        value=features[1]
+    )
 
-    # initial and final points of the separating line
-    y_0 = D_selected_df[feat_y].min()
-    x_0 = f_y(y_0, coeff_x, coeff_y, intercept)
-    y_1 = D_selected_df[feat_y].max()
-    x_1 = f_y(y_1, coeff_x, coeff_y, intercept)
+    current_features = [0,1]
+
+    def f_x(x):
+
+        if current_features[0] == current_features[1]:
+            return x
+        else:
+            return -x * coefficients[current_features[0]] / coefficients[current_features[1]] - \
+                   intercept / coefficients[current_features[1]]
+
+    line_x = np.linspace(D_selected_df[features[0]].min(), D_selected_df[features[0]].max(), 1000)
+    line_y = f_x(line_x)
 
     # the interactive plot is constructed with a figure widget
     fig = go.FigureWidget()
 
+    custom_RS = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'RS']['energy_diff'],
+                           D_selected_df.loc[D_selected_df['Structure'] == 'RS']['P_predict']))[0]
+    custom_ZB = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['energy_diff'],
+                           D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['P_predict']))[0]
+
     # the final plot is the sum of two traces, respectively containing the RS vs ZB materials
     fig.add_trace(
         (
-        go.Scatter(
-            mode='markers',
-            x=D_selected_df.loc[D_selected_df['Structure']=='RS'][feat_x], 
-            y=D_selected_df.loc[D_selected_df['Structure']=='RS'][feat_y],
-            customdata = np.dstack((D_selected_df.loc[D_selected_df['Structure']=='RS']['energy_diff'],
-                          D_selected_df.loc[D_selected_df['Structure']=='RS']['P_predict']))[0],
-            text = D_selected_df.loc[D_selected_df['Structure']=='RS'][['Chem Formula']],
-            hovertemplate = 
-            r"<b>%{text}</b><br><br>" +
-            "x axis: %{x:,.2f}<br>" +
-            "y axis: %{y:,.2f}<br>" +
-            "ΔE reference:  %{customdata[0]:,.4f}<br>"+
-            "ΔE predicted:  %{customdata[1]:,.4f}<br>",
-            name = 'RS'
-        )
+            go.Scatter(
+                mode='markers',
+                x=D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[0]].to_numpy(),
+                y=D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[1]].to_numpy(),
+                customdata=custom_RS,
+                text=D_selected_df.loc[D_selected_df['Structure'] == 'RS'][['Chem Formula']],
+                hovertemplate=
+                r"<b>%{text}</b><br><br>" +
+                "x axis: %{x:,.2f}<br>" +
+                "y axis: %{y:,.2f}<br>" +
+                "ΔE reference:  %{customdata[0]:,.4f}<br>" +
+                "ΔE predicted:  %{customdata[1]:,.4f}<br>",
+                name='RS',
+                meta="0",
+            )
         ))
     fig.add_trace(
         (
-        go.Scatter(
-            mode='markers',
-            x=D_selected_df.loc[D_selected_df['Structure']=='ZB'][feat_x], 
-            y=D_selected_df.loc[D_selected_df['Structure']=='ZB'][feat_y],
-            customdata = np.dstack((D_selected_df.loc[D_selected_df['Structure']=='ZB']['energy_diff'],
-                          D_selected_df.loc[D_selected_df['Structure']=='ZB']['P_predict']))[0],
-            text = D_selected_df.loc[D_selected_df['Structure']=='ZB'][['Chem Formula']],
-            hovertemplate = 
-            r"<b>%{text}</b><br><br>" +
-            "x axis: %{x:,.2f}<br>" +
-            "y axis: %{y:,.2f}<br>" +
-            "ΔE reference:  %{customdata[0]:,.4f}<br>"+
-            "ΔE predicted:  %{customdata[1]:,.4f}<br>",
-            name='ZB'
-        )
+            go.Scatter(
+                mode='markers',
+                x=D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[0]].to_numpy(),
+                y=D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[1]].to_numpy(),
+                customdata=custom_ZB,
+                text=D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][['Chem Formula']],
+                hovertemplate=
+                r"<b>%{text}</b><br><br>" +
+                "x axis: %{x:,.2f}<br>" +
+                "y axis: %{y:,.2f}<br>" +
+                "ΔE reference:  %{customdata[0]:,.4f}<br>" +
+                "ΔE predicted:  %{customdata[1]:,.4f}<br>",
+                # meta = tuple([0,1]),
+                name='ZB',
+                meta="1",
+            )
         ))
-    
-    # add the separating line onto the plot
-    fig.layout = {    
-        'shapes': [
-            {
-                'type': 'line',
-                'x0': x_0,
-                'y0': y_0,
-                'x1': x_1,
-                'y1': y_1,
-                'line': {
-                    'color': 'grey',
-                    'width': 2,
-                    'dash': "dashdot"
-                },
-            }
-        ],
-        'showlegend': True
-    }
+    fig.add_trace(
+        (
+            go.Scatter(
+                x=line_x,
+                y=line_y,
+                customdata=[0, 1],
+                meta="-1",
+                # customdata=dict(x="0", y="1"),
+                marker=dict(color='Grey'),
+                name='Separation line'
+            )
+        )
+    )
 
     fig.update_layout(
-        xaxis_title= feat_x,
-        yaxis_title= feat_y,
+        xaxis_title=features[0],
+        yaxis_title=features[1],
         hoverlabel=dict(
-            bgcolor="white", 
-            font_size=16, 
+            bgcolor="white",
+            font_size=16,
             font_family="Rockwell"
-        )
+        ),
+        width=800,
+        height=600,
+        margin=dict(
+            l=50,
+            r=50,
+            b=100,
+            t=150,
+            pad=4
+        ),
     )
 
     scatter_RS = fig.data[0]
     scatter_ZB = fig.data[1]
+    scatter_line = fig.data[2]
 
-#-------------------------------------------------------------------------------------------------------------------------------
-# Here we define the interaction with the jsmol viewer
+    def handle_xfeat_change(change):
+        fig.update_layout(
+            xaxis_title=change.new,
+        )
+        current_features[0] = features.index(change.new)
+        scatter_RS['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+        scatter_ZB['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+        line_x = np.linspace(D_selected_df[change.new].min(), D_selected_df[change.new].max(), 1000)
+        line_y = f_x(line_x)
+        scatter_line['x'] = line_x
+        scatter_line['y'] = line_y
+
+    def handle_yfeat_change(change):
+        fig.update_layout(
+            yaxis_title=change.new,
+        )
+        current_features[1] = features.index(change.new)
+        scatter_RS['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+        scatter_ZB['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+        line_x = np.linspace(D_selected_df[features[current_features[0]]].min(), D_selected_df[features[current_features[0]]].max(), 1000)
+        line_y = f_x(line_x)
+        scatter_line['x'] = line_x
+        scatter_line['y'] = line_y
+
+    feat_x.observe(handle_xfeat_change, names='value')
+    feat_y.observe(handle_yfeat_change, names='value')
+
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Here we define the interaction with the jsmol viewer
+
+
 
     marker_size = 7
     RS_npoints = len(D_selected_df.loc[D_selected_df['Structure']=='RS'])
@@ -176,7 +233,7 @@ def make_interactive_plot (df_D, sisso, D_selected_df, viewer):
 
     def view_structure_RS ( formula ):
         viewer.script( "load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
-  
+
     def update_point_RS(trace, points, selector):
         if not points.point_inds:
             return
@@ -227,29 +284,162 @@ def make_interactive_plot (df_D, sisso, D_selected_df, viewer):
     text_ZB = []
     for material in D_selected_df['Chem Formula'].tolist():
         text_ZB.append(material +  ' - ZB structure')
-   
-    return fig
 
 
+    box_features = widgets.HBox([feat_x, feat_y])
+    container = widgets.VBox([box_features, fig])
 
-def viewer_dd ( viewer, D_selected_df ):
-    
+    return container
+
+
+def viewer_dd(viewer, D_selected_df):
     dropdown_compounds = widgets.Dropdown(
-        options = D_selected_df['Chem Formula'].tolist(),
-        description = 'Compound '
+        options=D_selected_df['Chem Formula'].tolist(),
+        description='Compound '
     )
 
     dropdown_structure = widgets.Dropdown(
-        options = ['RS','ZB'],
-        description = 'Structure '
+        options=['RS', 'ZB'],
+        description='Structure '
     )
 
     button = widgets.Button(description="Visualize")
 
-    def on_button_clicked(button):
-        viewer.script( "load data/compressed_sensing/structures/"+ dropdown_structure.value +"_structures/" + dropdown_compounds.value + ".xyz")
+    def on_button_clicked( button ):
+        viewer.script(
+            "load data/compressed_sensing/structures/" + dropdown_structure.value + "_structures/" + dropdown_compounds.value + ".xyz")
 
     button.on_click(on_button_clicked)
-    container = widgets.HBox([dropdown_compounds,dropdown_structure,button])
+    container = widgets.HBox([dropdown_compounds, dropdown_structure, button])
 
     return container
+
+
+
+   # ------------------------------------------------------------------------------------------------------------------
+    # Here we define the button update
+
+    # updatemenus = list([
+    #
+    #     dict(
+    #         buttons=list([
+    #
+    #             # x-axis contains the feature 0
+    #             dict(method='update',
+    #                  # vaar='d',
+    #                  label="x-axis0:  " + features[0],
+    #                  args=[{
+    #                      # 'customdata': [custom_RS, custom_ZB, [0, fig['data'][2].customdata[1]]],
+    #                      # 'meta'[2]: [0, fig['data'][2].meta[1]],
+    #                      # 'meta': [fig['data'][1].meta, fig['data'][0].meta, fig['data'][2].meta],
+    #                      'x': [D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[0]].to_numpy(),
+    #                            D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[0]].to_numpy(),
+    #                            np.linspace(D_selected_df[features[0]].min(), D_selected_df[features[0]].max(), 1000)
+    #                            ],
+    #                      'y': [
+    #                          # fig['data'][0].y, fig['data'][1].y,
+    #                          D_selected_df.loc[D_selected_df['Structure'] == 'RS'][
+    #                              features[fig['data'][2].customdata[1]]].to_numpy(),
+    #                          D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][
+    #                              features[fig['data'][2].customdata[1]]].to_numpy(),
+    #                          f_x(np.linspace(D_selected_df[features[0]].min(),
+    #                                          D_selected_df[features[0]].max(), 1000), xfeat_loc=0)
+    #                      ],
+    #                  },
+    #                  ],
+    #                  name='x',
+    #                  ),
+    #
+    #             # x-axis contains the feature 1
+    #             dict(method='update',
+    #                  label="x-axis1:  " + features[1],
+    #                  args=[{
+    #                      'meta': [fig['data'][1].meta, fig['data'][0].meta, fig['data'][2].meta],
+    #                      'customdata': [custom_RS, custom_ZB, [1, fig['data'][2].customdata[1]]],
+    #                      'x': [D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[1]].to_numpy(),
+    #                            D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[1]].to_numpy(),
+    #                            np.linspace(D_selected_df[features[1]].min(), D_selected_df[features[1]].max(), 1000)
+    #                            ],
+    #                      'y': [
+    #                          # fig['data'][0].y, fig['data'][1].y,
+    #                          D_selected_df.loc[D_selected_df['Structure'] == 'RS'][
+    #                              features[fig['data'][2].customdata[1]]].to_numpy(),
+    #                          D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][
+    #                              features[fig['data'][2].customdata[1]]].to_numpy(),
+    #                          f_x(np.linspace(D_selected_df[features[1]].min(),
+    #                                          D_selected_df[features[1]].max(), 1000), yfeat_loc=1)
+    #                      ],
+    #                  },
+    #                  ],
+    #                  name='y'),
+    #         ]),
+    #         showactive=True,
+    #         pad={'l': 0, 't': -100},
+    #     ),
+    #
+    #     dict(
+    #         buttons=list([
+    #
+    #             # y-axis contains the feature 1
+    #             dict(method='update',
+    #                  label="y-axis1:  " + features[1],
+    #                  args=[{
+    #                      'meta': [fig['data'][1].meta, fig['data'][0].meta, fig['data'][2].meta],
+    #
+    #                      # 'meta': [tuple([fig['data'][2].meta[0], 1]),tuple([fig['data'][2].meta[0], 1]),tuple([fig['data'][2].meta[0], 1])],
+    #                      # 'customdata': [custom_RS, custom_ZB, [fig['data'][2].customdata[0], 1]],
+    #
+    #                      # 'y': [D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[1]].to_numpy(),
+    #                      #          D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[1]].to_numpy(),
+    #                      #          f_x(np.linspace(D_selected_df[features[fig['data'][2].customdata[0]]].min(),
+    #                      #                          D_selected_df[features[fig['data'][2].customdata[0]]].max(), 1000),
+    #                      #              fig['data'][2].customdata[0], 1, intercept)],
+    #                      # 'x': [
+    #                      #     # fig['data'][0].x, fig['data'][1].x,
+    #                      #     D_selected_df.loc[D_selected_df['Structure'] == 'RS'][
+    #                      #         features[fig['data'][2].customdata[0]]].to_numpy(),
+    #                      #     D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][
+    #                      #         features[fig['data'][2].customdata[0]]].to_numpy(),
+    #                      #     np.linspace(D_selected_df[features[fig['data'][2].customdata[0]]].min(),
+    #                      #                         D_selected_df[features[fig['data'][2].customdata[0]]].max(), 1000),
+    #                      #       ],
+    #                  },
+    #                  ],
+    #                  name='y'),
+    #
+    #             # y-axis contains the feature 0
+    #             dict(method='update',
+    #                  label="y-axis0:  " + features[0],
+    #                  args=[{
+    #                      'meta': [fig['data'][1].meta, fig['data'][0].meta, fig['data'][2].meta],
+    #
+    #                      # 'meta': [tuple([fig['data'][2].meta[0], 0]),tuple([fig['data'][2].meta[0], 0]),tuple([fig['data'][2].meta[0], 0])],
+    #                      # 'customdata': [custom_RS, custom_ZB, [fig['data'][2].customdata[0], 0]],
+    #                      # 'y': [D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[0]].to_numpy(),
+    #                      #          D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[0]].to_numpy(),
+    #                      #          f_x(np.linspace(D_selected_df[features[fig['data'][2].customdata[0]]].min(),
+    #                      #                          D_selected_df[features[fig['data'][2].customdata[0]]].max(), 1000),
+    #                      #              fig['data'][2].customdata[0], 0, intercept)],
+    #                      # 'x': [
+    #                      #     #fig['data'][0].x, fig['data'][1].x,
+    #                      #     D_selected_df.loc[D_selected_df['Structure'] == 'RS'][
+    #                      #         features[fig['data'][2].customdata[0]]].to_numpy(),
+    #                      #     D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][
+    #                      #         features[fig['data'][2].customdata[0]]].to_numpy(),
+    #                      #     np.linspace(D_selected_df[features[fig['data'][2].customdata[0]]].min(),
+    #                      #                       D_selected_df[features[fig['data'][2].customdata[0]]].max(), 1000),
+    #                      #       ],
+    #                  },
+    #                  ],
+    #                  name='x'),
+    #
+    #         ]),
+    #         name='y-axis',
+    #         showactive=True,
+    #         pad={'l': 0, 't': -50},
+    #
+    #     )
+    # ])
+    # pad = {'r': 0, 't': 50}
+    # fig.update_layout(updatemenus=updatemenus)
+    # # print(fig['data'][0])
