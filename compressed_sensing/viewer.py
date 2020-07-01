@@ -83,19 +83,7 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
         coefficients.append(sisso.coefs[sisso.l0_selected_indices[total_features - 1][i]])
     intercept = sisso.intercept
 
-    feat_x = widgets.Dropdown(
-        description='x-axis',
-        options=features,
-        value=features[0]
-    )
-
-    feat_y = widgets.Dropdown(
-        description='y-axis',
-        options=features,
-        value=features[1]
-    )
-
-    current_features = [0,1]
+    current_features = [0, 1]
 
     def f_x(x):
 
@@ -132,7 +120,6 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
                 "ΔE reference:  %{customdata[0]:,.4f}<br>" +
                 "ΔE predicted:  %{customdata[1]:,.4f}<br>",
                 name='RS',
-                meta="0",
             )
         ))
     fig.add_trace(
@@ -151,7 +138,6 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
                 "ΔE predicted:  %{customdata[1]:,.4f}<br>",
                 # meta = tuple([0,1]),
                 name='ZB',
-                meta="1",
             )
         ))
     fig.add_trace(
@@ -159,9 +145,6 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
             go.Scatter(
                 x=line_x,
                 y=line_y,
-                customdata=[0, 1],
-                meta="-1",
-                # customdata=dict(x="0", y="1"),
                 marker=dict(color='Grey'),
                 name='Separation line'
             )
@@ -190,46 +173,88 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
     scatter_RS = fig.data[0]
     scatter_ZB = fig.data[1]
     scatter_line = fig.data[2]
+    RS_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'RS'])
+    ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'])
 
-    def handle_xfeat_change(change):
-        fig.update_layout(
-            xaxis_title=change.new,
-        )
-        current_features[0] = features.index(change.new)
-        scatter_RS['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
-        scatter_ZB['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
-        line_x = np.linspace(D_selected_df[change.new].min(), D_selected_df[change.new].max(), 1000)
-        line_y = f_x(line_x)
-        scatter_line['x'] = line_x
-        scatter_line['y'] = line_y
+    feat_x = widgets.Dropdown(
+        description='x-axis',
+        options=features,
+        value=features[0]
+    )
 
-    def handle_yfeat_change(change):
-        fig.update_layout(
-            yaxis_title=change.new,
-        )
-        current_features[1] = features.index(change.new)
-        scatter_RS['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
-        scatter_ZB['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
-        line_x = np.linspace(D_selected_df[features[current_features[0]]].min(), D_selected_df[features[current_features[0]]].max(), 1000)
-        line_y = f_x(line_x)
-        scatter_line['x'] = line_x
-        scatter_line['y'] = line_y
+    feat_y = widgets.Dropdown(
+        description='y-axis',
+        options=features,
+        value=features[1]
+    )
 
-    feat_x.observe(handle_xfeat_change, names='value')
-    feat_y.observe(handle_yfeat_change, names='value')
-
-
-    # -------------------------------------------------------------------------------------------------------------------
-    # Here we define the interaction with the jsmol viewer
-
+    feat_marker = widgets.Dropdown(
+        description='Marker size',
+        options=['None'] + features,
+        value='None',
+    )
 
 
     marker_size = 7
-    RS_npoints = len(D_selected_df.loc[D_selected_df['Structure']=='RS'])
-    ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure']=='ZB'])
 
-    scatter_RS.marker.size = [marker_size] * RS_npoints
-    scatter_RS.marker.symbol = ["circle"] * RS_npoints
+    def set_markers(feature='None'):
+        print(feature)
+        if feature == 'None':
+            scatter_RS.marker.size = [marker_size] * RS_npoints
+            scatter_ZB.marker.size = [marker_size] * ZB_npoints
+        else:
+            min_value = min(min(D_selected_df.loc[D_selected_df['Structure'] == 'RS'][feature]),
+                            min(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][feature]))
+            max_value = max(max(D_selected_df.loc[D_selected_df['Structure'] == 'RS'][feature]),
+                            max(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][feature]))
+            coeff = 2*marker_size/(max_value - min_value)
+            scatter_RS.marker.size = marker_size/2+coeff*D_selected_df.loc[D_selected_df['Structure'] == 'RS'][feature]
+            scatter_ZB.marker.size = marker_size/2+coeff*D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][feature]
+
+        scatter_RS.marker.symbol = ["circle"] * RS_npoints
+        scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+
+    set_markers()
+
+    def handle_xfeat_change (change):
+        if features.index(change.new) != current_features[1]:
+            fig.update_layout(
+                xaxis_title=change.new,
+            )
+            current_features[0] = features.index(change.new)
+            scatter_RS['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+            scatter_ZB['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+            line_x = np.linspace(D_selected_df[change.new].min(), D_selected_df[change.new].max(), 1000)
+            line_y = f_x(line_x)
+            scatter_line['x'] = line_x
+            scatter_line['y'] = line_y
+
+    def handle_yfeat_change(change):
+        if features.index(change.new) != current_features[0]:
+            fig.update_layout(
+                yaxis_title=change.new,
+            )
+            current_features[1] = features.index(change.new)
+            scatter_RS['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+            scatter_ZB['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+            line_x = np.linspace(D_selected_df[features[current_features[0]]].min(),
+                                 D_selected_df[features[current_features[0]]].max(), 1000)
+            line_y = f_x(line_x)
+            scatter_line['x'] = line_x
+            scatter_line['y'] = line_y
+
+    def handle_markerfeat_change(change):
+        set_markers(change.new)
+
+    feat_x.observe(handle_xfeat_change, names='value')
+    feat_y.observe(handle_yfeat_change, names='value')
+    feat_marker.observe(handle_markerfeat_change, names='value')
+
+    box_features = widgets.HBox([widgets.VBox([feat_x, feat_y]), feat_marker])
+    container = widgets.VBox([box_features, fig])
+
+    # -------------------------------------------------------------------------------------------------------------------
+    # Here we define the interaction with the jsmol viewer
 
     def view_structure_RS ( formula ):
         viewer.script( "load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
@@ -237,10 +262,7 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
     def update_point_RS(trace, points, selector):
         if not points.point_inds:
             return
-        scatter_RS.marker.size = [marker_size] * RS_npoints
-        scatter_RS.marker.symbol = ["circle"] * RS_npoints
-        scatter_ZB.marker.size = [marker_size] * ZB_npoints
-        scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+        set_markers()
         sizes = list(scatter_RS.marker.size)
         symbols = list(scatter_RS.marker.symbol)
         for i in points.point_inds:
@@ -254,15 +276,12 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
         view_structure_RS(formula)
 
     def view_structure_ZB ( formula ):
-        viewer.script( "load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
+        viewer.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
 
     def update_point_ZB(trace, points, selector):
         if not points.point_inds:
             return
-        scatter_RS.marker.size = [marker_size] * RS_npoints
-        scatter_RS.marker.symbol = ["circle"] * RS_npoints
-        scatter_ZB.marker.size = [marker_size] * ZB_npoints
-        scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+        set_markers()
         sizes = list(scatter_RS.marker.size)
         symbols = list(scatter_RS.marker.symbol)
         for i in points.point_inds:
@@ -280,14 +299,10 @@ def make_interactive_plot(df_D, sisso, D_selected_df, viewer):
 
     text_RS = []
     for material in D_selected_df['Chem Formula'].tolist():
-        text_RS.append(material +  ' - RS structure')
+        text_RS.append(material + ' - RS structure')
     text_ZB = []
     for material in D_selected_df['Chem Formula'].tolist():
-        text_ZB.append(material +  ' - ZB structure')
-
-
-    box_features = widgets.HBox([feat_x, feat_y])
-    container = widgets.VBox([box_features, fig])
+        text_ZB.append(material + ' - ZB structure')
 
     return container
 
