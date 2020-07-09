@@ -170,12 +170,14 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
     widg_checkbox_l = widgets.Checkbox(
         value=True,
         indent=False,
-        layout=widgets.Layout(width='20px')
+        layout=widgets.Layout(width='50px'),
+        description='x'
     )
     widg_checkbox_r = widgets.Checkbox(
         value=False,
         indent=False,
-        layout=widgets.Layout(width='20px')
+        layout=widgets.Layout(width='50px'),
+        description='+'
     )
 
     def set_markers_size(feature='Default'):
