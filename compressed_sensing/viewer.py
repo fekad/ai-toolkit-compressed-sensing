@@ -170,14 +170,29 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
     widg_checkbox_l = widgets.Checkbox(
         value=True,
         indent=False,
-        layout=widgets.Layout(width='50px'),
-        description='x'
+        layout=widgets.Layout(width='20px')
     )
     widg_checkbox_r = widgets.Checkbox(
         value=False,
         indent=False,
-        layout=widgets.Layout(width='50px'),
+        layout=widgets.Layout(width='20px'),
         description='+'
+    )
+    file1 = open("./assets/compressed_sensing/cross.png", "rb")
+    image1 = file1.read()
+    widg_img1 = widgets.Image(
+        value=image1,
+        format='png',
+        width=30,
+        height=30,
+    )
+    file2 = open("./assets/compressed_sensing/cross2.png", "rb")
+    image2 = file2.read()
+    widg_img2 = widgets.Image(
+        value=image2,
+        format='png',
+        width=30,
+        height=30,
     )
 
     def set_markers_size(feature='Default'):
@@ -373,12 +388,15 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
 
     box_features = widgets.HBox([widgets.VBox([widg_featx, widg_featy]), widg_featmarker])
     container = widgets.VBox([box_features, fig,
-                              widgets.HBox([widgets.VBox(
-                                  [widgets.HBox([widg_compound_text_l, widg_display_button_l, widg_checkbox_l]),
-                                   output_l]),
-                                  widgets.VBox([widgets.HBox(
-                                      [widg_compound_text_r, widg_display_button_r, widg_checkbox_r]),
-                                      output_r]),
+                              widgets.HBox([
+                                  widgets.VBox(
+                                      [widgets.HBox([widg_compound_text_l, widg_display_button_l, widg_img1,
+                                                     widg_checkbox_l]),
+                                       output_l]),
+                                  widgets.VBox(
+                                      [widgets.HBox([widg_compound_text_r, widg_display_button_r, widg_img2,
+                                                     widg_checkbox_r]),
+                                       output_r]),
                               ])
                               ])
 
