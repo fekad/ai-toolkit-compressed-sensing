@@ -3,584 +3,627 @@ import ipywidgets as widgets
 from jupyter_jsmol import JsmolView
 import numpy as np
 
-# from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
-# from bokeh.io import show, output_notebook
-# from bokeh.plotting import figure, show
-# from bokeh.embed import components
-# import itertools
-# from bokeh.palettes import Dark2_5 as palette
-#
-# output_notebook()
+from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
+from bokeh.io import show, output_notebook
+from bokeh.plotting import figure, show
+from bokeh.embed import components
+import itertools
+from bokeh.palettes import Dark2_5 as palette
 
+output_notebook()
 
-def make_interactive_plot(df_D, sisso, D_selected_df):
-    # features are obtained from the SissoRegressor object
-    total_features = sisso.n_nonzero_coefs
+class Visualizer:
 
-    features = []
-    for i in range(total_features):
-        features.append(df_D.columns[sisso.l0_selected_indices[total_features - 1]][i])
+    def __init__(self, df_D, sisso, D_selected_df):
 
-    # coefficients and intercept used to create the line separating the RS vs ZB materials
-    coefficients = []
-    for i in range(total_features):
-        coefficients.append(sisso.coefs[sisso.l0_selected_indices[total_features - 1][i]])
-    intercept = sisso.intercept
+        self.df_D = df_D
+        self.sisso = sisso
+        self.D_selected_df = D_selected_df
+        self.marker_size = 7
+        self.marker_symbol = 'circle'
+        self.current_features = [0, 1]
+        self.font_size = 12
+        self.cross_size = 15
+        self.font_family = 'Helvetica'
+        self.bg_color = 'rgb(229,236,246)'
+        self.total_features = sisso.n_nonzero_coefs
+        self.features = []
+        for i in range(self.total_features):
+            self.features.append(df_D.columns[sisso.l0_selected_indices[self.total_features - 1]][i])
+        self.coefficients = []
+        for i in range(self.total_features):
+            self.coefficients.append(sisso.coefs[sisso.l0_selected_indices[self.total_features - 1][i]])
+        self.intercept = sisso.intercept
+        self.line_x = np.linspace(D_selected_df[self.features[0]].min(), D_selected_df[self.features[0]].max(), 1000)
+        self.line_y = self.f_x(self.line_x)
+        self.fig = go.FigureWidget()
+        self.viewer_l = JsmolView()
+        self.viewer_r = JsmolView()
 
-    current_features = [0, 1]
+        self.text_RS = []
+        for material in D_selected_df['Chem Formula'].tolist():
+            self.text_RS.append(material + ' - RS structure')
+        self.text_ZB = []
+        for material in D_selected_df['Chem Formula'].tolist():
+            self.text_ZB.append(material + ' - ZB structure')
 
-    marker_size_default = 7
-    cross_size_default = 15
-    font_size = 12
-    font_family = 'Helvetica'
-    bg_color = 'rgb(229, 236, 246)'
-    marker_symbol = 'circle'
+        custom_RS = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'RS']['energy_diff'],
+                               D_selected_df.loc[D_selected_df['Structure'] == 'RS']['P_predict']))[0]
+        custom_ZB = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['energy_diff'],
+                               D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['P_predict']))[0]
 
-    def f_x(x):
-        if current_features[0] == current_features[1]:
-            return x
-        else:
-            return -x * coefficients[current_features[0]] / coefficients[current_features[1]] - \
-                   intercept / coefficients[current_features[1]]
-
-    line_x = np.linspace(D_selected_df[features[0]].min(), D_selected_df[features[0]].max(), 1000)
-    line_y = f_x(line_x)
-
-    # the interactive plot is constructed with a figure widget
-    fig = go.FigureWidget()
-
-    custom_RS = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'RS']['energy_diff'],
-                           D_selected_df.loc[D_selected_df['Structure'] == 'RS']['P_predict']))[0]
-    custom_ZB = np.dstack((D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['energy_diff'],
-                           D_selected_df.loc[D_selected_df['Structure'] == 'ZB']['P_predict']))[0]
-
-    # the final plot is the sum of two traces, respectively containing the RS vs ZB materials
-    x_RS = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[0]].to_numpy()
-    y_RS = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][features[1]].to_numpy()
-    x_ZB = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[0]].to_numpy()
-    y_ZB = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][features[1]].to_numpy()
-    fig.add_trace(
-        (
-            go.Scatter(
-                mode='markers',
-                x=x_RS,
-                y=y_RS,
-                customdata=custom_RS,
-                text=D_selected_df.loc[D_selected_df['Structure'] == 'RS'][['Chem Formula']],
-                hovertemplate=
-                r"<b>%{text}</b><br><br>" +
-                "x axis: %{x:,.2f}<br>" +
-                "y axis: %{y:,.2f}<br>" +
-                "ΔE reference:  %{customdata[0]:,.4f}<br>" +
-                "ΔE predicted:  %{customdata[1]:,.4f}<br>",
-                name='RS',
-            )
-        ))
-    fig.add_trace(
-        (
-            go.Scatter(
-                mode='markers',
-                x=x_ZB,
-                y=y_ZB,
-                customdata=custom_ZB,
-                text=D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][['Chem Formula']],
-                hovertemplate=
-                r"<b>%{text}</b><br><br>" +
-                "x axis: %{x:,.2f}<br>" +
-                "y axis: %{y:,.2f}<br>" +
-                "ΔE reference:  %{customdata[0]:,.4f}<br>" +
-                "ΔE predicted:  %{customdata[1]:,.4f}<br>",
-                name='ZB',
-            )
-        ))
-    fig.add_trace(
-        (
-            go.Scatter(
-                x=line_x,
-                y=line_y,
-                marker=dict(color='Grey'),
-                name='Separation line'
+        # the final plot is the sum of two traces, respectively containing the RS vs ZB materials
+        x_RS = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][self.features[0]].to_numpy()
+        y_RS = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][self.features[1]].to_numpy()
+        x_ZB = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][self.features[0]].to_numpy()
+        y_ZB = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][self.features[1]].to_numpy()
+        self.fig.add_trace(
+            (
+                go.Scatter(
+                    mode='markers',
+                    x=x_RS,
+                    y=y_RS,
+                    customdata=custom_RS,
+                    text=D_selected_df.loc[D_selected_df['Structure'] == 'RS'][['Chem Formula']],
+                    hovertemplate=
+                    r"<b>%{text}</b><br><br>" +
+                    "x axis: %{x:,.2f}<br>" +
+                    "y axis: %{y:,.2f}<br>" +
+                    "ΔE reference:  %{customdata[0]:,.4f}<br>" +
+                    "ΔE predicted:  %{customdata[1]:,.4f}<br>",
+                    name='RS',
+                )
+            ))
+        self.fig.add_trace(
+            (
+                go.Scatter(
+                    mode='markers',
+                    x=x_ZB,
+                    y=y_ZB,
+                    customdata=custom_ZB,
+                    text=D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][['Chem Formula']],
+                    hovertemplate=
+                    r"<b>%{text}</b><br><br>" +
+                    "x axis: %{x:,.2f}<br>" +
+                    "y axis: %{y:,.2f}<br>" +
+                    "ΔE reference:  %{customdata[0]:,.4f}<br>" +
+                    "ΔE predicted:  %{customdata[1]:,.4f}<br>",
+                    name='ZB',
+                )
+            ))
+        self.fig.add_trace(
+            (
+                go.Scatter(
+                    x=self.line_x,
+                    y=self.line_y,
+                    marker=dict(color='Grey'),
+                    name='Separation line'
+                )
             )
         )
-    )
 
-    x_min = min(min(x_RS), min(x_ZB))
-    y_min = min(min(y_RS), min(y_ZB))
-    x_max = max(max(x_RS), max(x_ZB))
-    y_max = max(max(y_RS), max(y_ZB))
-    x_delta = 0.05 * abs(x_max - x_min)
-    y_delta = 0.05 * abs(y_max - y_min)
+        x_min = min(min(x_RS), min(x_ZB))
+        y_min = min(min(y_RS), min(y_ZB))
+        x_max = max(max(x_RS), max(x_ZB))
+        y_max = max(max(y_RS), max(y_ZB))
+        x_delta = 0.05 * abs(x_max - x_min)
+        y_delta = 0.05 * abs(y_max - y_min)
 
-    fig.update_layout(
-        xaxis_title=features[0],
-        yaxis_title=features[1],
-        xaxis_range=[x_min - x_delta, x_max + x_delta],
-        yaxis_range=[y_min - y_delta, y_max + y_delta],
-        hoverlabel=dict(
-            bgcolor="white",
-            font_size=16,
-            font_family="Rockwell"
-        ),
-        width=800,
-        height=400,
-        margin=dict(
-            l=50,
-            r=50,
-            b=70,
-            t=20,
-            pad=4
-        ),
-    )
+        self.fig.update_layout(
+            xaxis_title=self.features[0],
+            yaxis_title=self.features[1],
+            xaxis_range=[x_min - x_delta, x_max + x_delta],
+            yaxis_range=[y_min - y_delta, y_max + y_delta],
+            hoverlabel=dict(
+                bgcolor="white",
+                font_size=16,
+                font_family="Rockwell"
+            ),
+            width=800,
+            height=400,
+            margin=dict(
+                l=50,
+                r=50,
+                b=70,
+                t=20,
+                pad=4
+            ),
+        )
 
-    scatter_RS = fig.data[0]
-    scatter_ZB = fig.data[1]
-    scatter_line = fig.data[2]
+        self.RS_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'RS'])
+        self.ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'])
+        self.scatter_RS = self.fig.data[0]
+        self.scatter_ZB = self.fig.data[1]
+        self.scatter_line = self.fig.data[2]
+        self.scatter_RS.marker.symbol = [self.marker_symbol] * self.RS_npoints
+        self.scatter_ZB.marker.symbol = [self.marker_symbol] * self.ZB_npoints
+        self.set_markers_size()
 
-    RS_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'RS'])
-    ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'])
+        self.widg_featx = widgets.Dropdown(
+            description='x-axis',
+            options=self.features,
+            value=self.features[0]
+        )
+        self.widg_featy = widgets.Dropdown(
+            description='y-axis',
+            options=self.features,
+            value=self.features[1]
+        )
+        self.widg_featmarker = widgets.Dropdown(
+            description="Marker",
+            options=['Default size'] + self.features,
+            value='Default size',
+        )
+        self.widg_compound_text_l = widgets.Text(
+            placeholder='...',
+            description='Compound:',
+            disabled=False,
+            layout=widgets.Layout(width='200px')
+        )
+        self.widg_compound_text_r = widgets.Text(
+            placeholder='...',
+            description='Compound:',
+            disabled=False,
+            layout=widgets.Layout(width='200px')
+        )
+        self.widg_display_button_l = widgets.Button(
+            description="Display",
+            layout=widgets.Layout(width='100px')
+        )
+        self.widg_display_button_r = widgets.Button(
+            description="Display",
+            layout=widgets.Layout(width='100px')
+        )
+        self.widg_checkbox_l = widgets.Checkbox(
+            value=True,
+            indent=False,
+            layout=widgets.Layout(width='20px')
+        )
+        self.widg_checkbox_r = widgets.Checkbox(
+            value=False,
+            indent=False,
+            layout=widgets.Layout(width='20px'),
+            description='+'
+        )
+        self.widg_markersize = widgets.Text(
+            placeholder=str(self.marker_size),
+            description='Marker size',
+            value=str(self.marker_size)
+        )
+        self.widg_crosssize = widgets.Text(
+            placeholder=str(self.cross_size),
+            description='Cross size',
+            value=str(self.cross_size)
+        )
+        self.widg_fontsize = widgets.Text(
+            placeholder=str(self.font_size),
+            description='Font size',
+            value=str(self.font_size)
+        )
+        self.widg_fontfamily = widgets.Text(
+            placeholder=str(self.font_family),
+            description='Font family',
+            value='Helvetica'
+        )
+        self.widg_bgcolor = widgets.Text(
+            placeholder=str(self.bg_color),
+            description='BG color',
+            value='rgb(229, 236, 246)'
+        )
+        self.widg_markersymbol = widgets.Text(
+            placeholder=str(self.marker_symbol),
+            description='Symbol',
+            value=str(self.marker_symbol)
+        )
+        self.widg_update_button = widgets.Button(
+            description='Update',
+            layout=widgets.Layout(width='150px')
+        )
+        self.widg_reset_button = widgets.Button(
+            description='Reset symbols',
+            layout=widgets.Layout(width='150px')
+        )
+        self.widg_plot_name = widgets.Text(
+            placeholder='plot',
+            value='plot',
+            description='Name',
+            layout=widgets.Layout(width='150px')
+        )
+        self.widg_plot_format = widgets.Text(
+            placeholder='png',
+            value='png',
+            description='Format',
+            layout=widgets.Layout(width='150px')
+        )
+        self.widg_scale = widgets.Text(
+            placeholder='1',
+            value='1',
+            description="Scale",
+            layout=widgets.Layout(width='150px')
+        )
+        self.widg_print_button = widgets.Button(
+            description='Print',
+            layout=widgets.Layout(width='300px')
+        )
 
-    widg_featx = widgets.Dropdown(
-        description='x-axis',
-        options=features,
-        value=features[0]
-    )
-    widg_featy = widgets.Dropdown(
-        description='y-axis',
-        options=features,
-        value=features[1]
-    )
-    widg_featmarker = widgets.Dropdown(
-        description="Marker",
-        options=['Default size'] + features,
-        value='Default size',
-    )
-    widg_compound_text_l = widgets.Text(
-        placeholder='...',
-        description='Compound:',
-        disabled=False,
-        layout=widgets.Layout(width='200px')
-    )
-    widg_compound_text_r = widgets.Text(
-        placeholder='...',
-        description='Compound:',
-        disabled=False,
-        layout=widgets.Layout(width='200px')
-    )
-    widg_display_button_l = widgets.Button(
-        description="Display",
-        layout=widgets.Layout(width='100px')
-    )
-    widg_display_button_r = widgets.Button(
-        description="Display",
-        layout=widgets.Layout(width='100px')
-    )
-    widg_checkbox_l = widgets.Checkbox(
-        value=True,
-        indent=False,
-        layout=widgets.Layout(width='20px')
-    )
-    widg_checkbox_r = widgets.Checkbox(
-        value=False,
-        indent=False,
-        layout=widgets.Layout(width='20px'),
-        description='+'
-    )
-    widg_markersize = widgets.Text(
-        placeholder=str(marker_size_default),
-        description='Marker size',
-        value=str(marker_size_default)
-    )
-    widg_fontsize = widgets.Text(
-        placeholder=str(font_size),
-        description='Font size',
-        value=str(font_size)
-    )
-    widg_fontfamily = widgets.Text(
-        placeholder=str(font_family),
-        description='Font family',
-        value='Helvetica'
-    )
-    widg_bgcolor = widgets.Text(
-        placeholder=str(bg_color),
-        description='BG color',
-        value='rgb(229, 236, 246)'
-    )
-    widg_markersymbol = widgets.Text(
-        placeholder=str(marker_symbol),
-        description='Symbol',
-        value=str(marker_symbol)
-    )
-    widg_update_button = widgets.Button(
-        description='Update',
-        layout=widgets.Layout(width='100px')
-    )
+        file1 = open("./assets/compressed_sensing/cross.png", "rb")
+        image1 = file1.read()
+        self.widg_img1 = widgets.Image(
+            value=image1,
+            format='png',
+            width=30,
+            height=30,
+        )
+        file2 = open("./assets/compressed_sensing/cross2.png", "rb")
+        image2 = file2.read()
+        self.widg_img2 = widgets.Image(
+            value=image2,
+            format='png',
+            width=30,
+            height=30,
+        )
 
-    file1 = open("./assets/compressed_sensing/cross.png", "rb")
-    image1 = file1.read()
-    widg_img1 = widgets.Image(
-        value=image1,
-        format='png',
-        width=30,
-        height=30,
-    )
-    file2 = open("./assets/compressed_sensing/cross2.png", "rb")
-    image2 = file2.read()
-    widg_img2 = widgets.Image(
-        value=image2,
-        format='png',
-        width=30,
-        height=30,
-    )
+    def f_x(self, x):
+        if self.current_features[0] == self.current_features[1]:
+            return x
+        else:
+            return -x * self.coefficients[self.current_features[0]] / self.coefficients[self.current_features[1]] - \
+                   self.intercept / self.coefficients[self.current_features[1]]
 
-    def set_markers_size(feature='Default size', marker_size=marker_size_default):
+    def set_markers_size(self, feature='Default size'):
         # Defines the size of the markers based on the input feature.
         # In case of default feature all markers have the same size.
         # Points marked with x/cross are set with a specific size
 
         if feature == 'Default size':
 
-            sizes_RS = scatter_RS.marker.size = [marker_size] * RS_npoints
-            sizes_ZB = scatter_ZB.marker.size = [marker_size] * ZB_npoints
+            sizes_RS = [self.marker_size] * self.RS_npoints
+            sizes_ZB = [self.marker_size] * self.ZB_npoints
+            symbols_RS = list(self.scatter_RS.marker.symbol)
+            symbols_ZB = list(self.scatter_ZB.marker.symbol)
 
-            symbols_RS = list(scatter_RS.marker.symbol)
-            symbols_ZB = list(scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('x')
-                sizes_RS[point] = cross_size_default
+                sizes_RS[point] = self.cross_size
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    sizes_ZB[point] = cross_size_default
+                    sizes_ZB[point] = self.cross_size
                 except:
                     pass
             try:
                 point = symbols_RS.index('cross')
-                sizes_RS[point] = cross_size_default
+                sizes_RS[point] = self.cross_size
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    sizes_ZB[point] = cross_size_default
+                    sizes_ZB[point] = self.cross_size
                 except:
                     pass
-            with fig.batch_update():
-                scatter_RS.marker.size = sizes_RS
-                scatter_ZB.marker.size = sizes_ZB
+            with self.fig.batch_update():
+                self.scatter_RS.marker.size = sizes_RS
+                self.scatter_ZB.marker.size = sizes_ZB
         else:
 
-            min_value = min(min(D_selected_df.loc[D_selected_df['Structure'] == 'RS'][feature]),
-                            min(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][feature]))
-            max_value = max(max(D_selected_df.loc[D_selected_df['Structure'] == 'RS'][feature]),
-                            max(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][feature]))
-            coeff = 2 * marker_size / (max_value - min_value)
-            sizes_RS = marker_size / 2 + coeff * D_selected_df.loc[D_selected_df['Structure'] == 'RS'][
+            min_value = min(min(self.D_selected_df.loc[self.D_selected_df['Structure'] == 'RS'][feature]),
+                            min(self.D_selected_df.loc[self.D_selected_df['Structure'] == 'ZB'][feature]))
+            max_value = max(max(self.D_selected_df.loc[self.D_selected_df['Structure'] == 'RS'][feature]),
+                            max(self.D_selected_df.loc[self.D_selected_df['Structure'] == 'ZB'][feature]))
+            coeff = 2 * self.marker_size / (max_value - min_value)
+            sizes_RS = self.marker_size / 2 + coeff * self.D_selected_df.loc[self.D_selected_df['Structure'] == 'RS'][
                 feature]
-            sizes_ZB = marker_size / 2 + coeff * D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][
+            sizes_ZB = self.marker_size / 2 + coeff * self.D_selected_df.loc[self.D_selected_df['Structure'] == 'ZB'][
                 feature]
-            with fig.batch_update():
-                scatter_RS.marker.size = sizes_RS
-                scatter_ZB.marker.size = sizes_ZB
+            with self.fig.batch_update():
+                self.scatter_RS.marker.size = sizes_RS
+                self.scatter_ZB.marker.size = sizes_ZB
 
-    def handle_xfeat_change(change):
+    def handle_xfeat_change (self, change):
         # changes the feature plotted on the x-axis
         # separating line is modified accordingly
-        fig.update_layout(
+        self.fig.update_layout(
             xaxis_title=change.new,
         )
-        current_features[0] = features.index(change.new)
-        scatter_RS['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
-        scatter_ZB['x'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
-        line_x = np.linspace(D_selected_df[change.new].min(), D_selected_df[change.new].max(), 1000)
-        line_y = f_x(line_x)
-        scatter_line['x'] = line_x
-        scatter_line['y'] = line_y
-        min_x = min(min(scatter_RS['x']), min(scatter_ZB['x']))
-        max_x = max(max(scatter_RS['x']), max(scatter_ZB['x']))
+        self.current_features[0] = self.features.index(change.new)
+        self.scatter_RS['x'] = self.D_selected_df.loc[self.D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+        self.scatter_ZB['x'] = self.D_selected_df.loc[self.D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+        line_x = np.linspace(self.D_selected_df[change.new].min(), self.D_selected_df[change.new].max(), 1000)
+        line_y = self.f_x(line_x)
+        self.scatter_line['x'] = line_x
+        self.scatter_line['y'] = line_y
+        min_x = min(min(self.scatter_RS['x']), min(self.scatter_ZB['x']))
+        max_x = max(max(self.scatter_RS['x']), max(self.scatter_ZB['x']))
         min_delta = 0.05 * abs(max_x - min_x)
-        fig.layout['xaxis'].range = [min_x - min_delta, max_x + min_delta]
+        self.fig.layout['xaxis'].range = [min_x - min_delta, max_x + min_delta]
 
-    def handle_yfeat_change(change):
+    def handle_yfeat_change(self, change):
         # changes the feature plotted on the x-axis
         # separating line is modified accordingly
-        fig.update_layout(
+        self.fig.update_layout(
             yaxis_title=change.new,
         )
-        current_features[1] = features.index(change.new)
-        scatter_RS['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
-        scatter_ZB['y'] = D_selected_df.loc[D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
-        line_x = np.linspace(D_selected_df[features[current_features[0]]].min(),
-                             D_selected_df[features[current_features[0]]].max(), 1000)
-        line_y = f_x(line_x)
-        scatter_line['x'] = line_x
-        scatter_line['y'] = line_y
-        min_y = min(min(scatter_RS['y']), min(scatter_ZB['y']))
-        max_y = max(max(scatter_RS['y']), max(scatter_ZB['y']))
+        self.current_features[1] = self.features.index(change.new)
+        self.scatter_RS['y'] = self.D_selected_df.loc[self.D_selected_df['Structure'] == 'RS'][change.new].to_numpy()
+        self.scatter_ZB['y'] = self.D_selected_df.loc[self.D_selected_df['Structure'] == 'ZB'][change.new].to_numpy()
+        line_x = np.linspace(self.D_selected_df[self.features[self.current_features[0]]].min(),
+                             self.D_selected_df[self.features[self.current_features[0]]].max(), 1000)
+        line_y = self.f_x(self.line_x)
+        self.scatter_line['x'] = line_x
+        self.scatter_line['y'] = line_y
+        min_y = min(min(self.scatter_RS['y']), min(self.scatter_ZB['y']))
+        max_y = max(max(self.scatter_RS['y']), max(self.scatter_ZB['y']))
         min_delta = 0.05 * abs(max_y - min_y)
-        fig.layout['yaxis'].range = [min_y - min_delta, max_y + min_delta]
+        self.fig.layout['yaxis'].range = [min_y - min_delta, max_y + min_delta]
 
-    def handle_markerfeat_change(change):
-        set_markers_size(feature=change.new)
+    def handle_markerfeat_change(self, change):
+        self.set_markers_size(feature=change.new)
 
-    def display_button_l_clicked(button):
+    def display_button_l_clicked(self, button):
 
         # Actions are performed only if the string inserted in the text widget corresponds to an existing compound
-        if widg_compound_text_l.value in D_selected_df['Chem Formula'].tolist():
-            structure_l = D_selected_df[D_selected_df['Chem Formula'] ==
-                                        widg_compound_text_l.value]['Structure'].values[0]
-            viewer_l.script(
+        if self.widg_compound_text_l.value in self.D_selected_df['Chem Formula'].tolist():
+            structure_l = self.D_selected_df[self.D_selected_df['Chem Formula'] ==
+                                        self.widg_compound_text_l.value]['Structure'].values[0]
+            self.viewer_l.script(
                 "load data/compressed_sensing/structures/" + structure_l + "_structures/"
-                + widg_compound_text_l.value + ".xyz")
+                + self.widg_compound_text_l.value + ".xyz")
 
-            symbols_RS = list(scatter_RS.marker.symbol)
-            symbols_ZB = list(scatter_ZB.marker.symbol)
+            symbols_RS = list(self.scatter_RS.marker.symbol)
+            symbols_ZB = list(self.scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
             if structure_l == 'RS':
-                point = np.where(scatter_RS['text'] == widg_compound_text_l.value)[0][0]
+                point = np.where(self.scatter_RS['text'] == self.widg_compound_text_l.value)[0][0]
                 symbols_RS[point] = 'x'
             if structure_l == 'ZB':
-                point = np.where(scatter_ZB['text'] == widg_compound_text_l.value)[0][0]
+                point = np.where(self.scatter_ZB['text'] == self.widg_compound_text_l.value)[0][0]
                 symbols_ZB[point] = 'x'
-            with fig.batch_update():
-                scatter_RS.marker.symbol = symbols_RS
-                scatter_ZB.marker.symbol = symbols_ZB
-            set_markers_size(feature=widg_featmarker.value)
+            with self.fig.batch_update():
+                self.scatter_RS.marker.symbol = symbols_RS
+                self.scatter_ZB.marker.symbol = symbols_ZB
+            self.set_markers_size(feature=self.widg_featmarker.value)
 
-    def display_button_r_clicked(button):
+    def display_button_r_clicked(self, button):
 
         # Actions are performed only if the string inserted in the text widget corresponds to an existing compound
-        if widg_compound_text_r.value in D_selected_df['Chem Formula'].tolist():
-            structure_r = D_selected_df[D_selected_df['Chem Formula'] ==
-                                        widg_compound_text_r.value]['Structure'].values[0]
-            viewer_r.script(
+        if self.widg_compound_text_r.value in self.D_selected_df['Chem Formula'].tolist():
+            structure_r = self.D_selected_df[self.D_selected_df['Chem Formula'] ==
+                                        self.widg_compound_text_r.value]['Structure'].values[0]
+            self.viewer_r.script(
                 "load data/compressed_sensing/structures/" + structure_r + "_structures/"
-                + widg_compound_text_r.value + ".xyz")
+                + self.widg_compound_text_r.value + ".xyz")
 
-            symbols_RS = list(scatter_RS.marker.symbol)
-            symbols_ZB = list(scatter_ZB.marker.symbol)
+            symbols_RS = list(self.scatter_RS.marker.symbol)
+            symbols_ZB = list(self.scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
             if structure_r == 'RS':
-                point = np.where(scatter_RS['text'] == widg_compound_text_r.value)[0][0]
+                point = np.where(self.scatter_RS['text'] == self.widg_compound_text_r.value)[0][0]
                 symbols_RS[point] = 'cross'
             if structure_r == 'ZB':
-                point = np.where(scatter_ZB['text'] == widg_compound_text_r.value)[0][0]
+                point = np.where(self.scatter_ZB['text'] == self.widg_compound_text_r.value)[0][0]
                 symbols_ZB[point] = 'cross'
-            with fig.batch_update():
-                scatter_RS.marker.symbol = symbols_RS
-                scatter_ZB.marker.symbol = symbols_ZB
-            set_markers_size(feature=widg_featmarker.value)
+            with self.fig.batch_update():
+                self.scatter_RS.marker.symbol = symbols_RS
+                self.scatter_ZB.marker.symbol = symbols_ZB
+            self.set_markers_size(feature=self.widg_featmarker.value)
 
-    def update_button_clicked(button):
+    def update_button_clicked(self, button):
+
+        self.marker_size = int(self.widg_markersize.value)
+        self.cross_size = int(self.widg_crosssize.value)
+
+        self.set_markers_size(feature=self.widg_featmarker.value)
 
         try:
-            fig.update_layout(
-                plot_bgcolor=widg_bgcolor.value,
+            self.fig.update_layout(
+                plot_bgcolor=self.widg_bgcolor.value,
                 font=dict(
-                    size=int(widg_fontsize.value),
-                    family=widg_fontfamily.value
+                    size=int(self.widg_fontsize.value),
+                    family=self.widg_fontfamily.value
                 )
             )
         except:
             pass
 
-    def handle_checkbox_l(change):
+    def print_button_clicked(self, button):
+
+        self.fig.write_image(self.widg_plot_name.value + '.' + self.widg_plot_format.value, scale=self.widg_scale.value)
+
+    def reset_button_clicked(self, button):
+
+        self.scatter_RS.marker.symbol = [self.marker_symbol] * self.RS_npoints
+        self.scatter_ZB.marker.symbol = [self.marker_symbol] * self.ZB_npoints
+        self.set_markers_size(self.widg_featmarker.value)
+
+    def handle_checkbox_l(self, change):
         if change.new:
-            widg_checkbox_r.value = False
+            self.widg_checkbox_r.value = False
         else:
-            widg_checkbox_r.value = True
+            self.widg_checkbox_r.value = True
 
-    def handle_checkbox_r(change):
+    def handle_checkbox_r(self, change):
         if change.new:
-            widg_checkbox_l.value = False
+            self.widg_checkbox_l.value = False
         else:
-            widg_checkbox_l.value = True
+            self.widg_checkbox_l.value = True
 
-    widg_featx.observe(handle_xfeat_change, names='value')
-    widg_featy.observe(handle_yfeat_change, names='value')
-    widg_featmarker.observe(handle_markerfeat_change, names='value')
-    widg_checkbox_l.observe(handle_checkbox_l, names='value')
-    widg_checkbox_r.observe(handle_checkbox_r, names='value')
-    widg_display_button_l.on_click(display_button_l_clicked)
-    widg_display_button_r.on_click(display_button_r_clicked)
-    widg_update_button.on_click(update_button_clicked)
+    def view_structure_RS_l(self, formula):
+        self.viewer_l.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
 
-    output_l = widgets.Output()
-    output_r = widgets.Output()
-    output_l.layout = widgets.Layout(width="400px", height='350px')
-    output_r.layout = widgets.Layout(width="400px", height='350px')
+    def view_structure_RS_r(self, formula):
+        self.viewer_r.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
 
-    viewer_l = JsmolView()
-    viewer_r = JsmolView()
+    def view_structure_ZB_l(self, formula):
+        self.viewer_l.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
 
-    with output_l:
-        display(viewer_l)
-    with output_r:
-        display(viewer_r)
+    def view_structure_ZB_r(self, formula):
+        self.viewer_r.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
 
-    scatter_RS.marker.symbol = [marker_symbol] * RS_npoints
-    scatter_ZB.marker.symbol = [marker_symbol] * ZB_npoints
-    set_markers_size()
-
-    box_layout = widgets.Layout(
-        border='dashed 1px',
-    )
-    box_features = widgets.HBox([
-        widgets.VBox([widg_featx, widg_featy, widg_featmarker]),
-        widgets.VBox([widgets.HBox([widg_markersize, widg_markersymbol]),
-                      widgets.HBox([widg_fontsize, widg_fontfamily]),
-                      widg_bgcolor, widg_update_button], layout=box_layout),
-    ])
-
-    container = widgets.VBox([box_features, fig,
-                              widgets.HBox([
-                                  widgets.VBox(
-                                      [widgets.HBox([widg_compound_text_l, widg_display_button_l, widg_img1,
-                                                     widg_checkbox_l]),
-                                       output_l]),
-                                  widgets.VBox(
-                                      [widgets.HBox([widg_compound_text_r, widg_display_button_r, widg_img2,
-                                                     widg_checkbox_r]),
-                                       output_r]),
-                              ])
-                              ])
-
-    # -------------------------------------------------------------------------------------------------------------------
-    # Here we define the interaction with the jsmol viewer
-
-    def view_structure_RS_l(formula):
-        viewer_l.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
-
-    def view_structure_RS_r(formula):
-        viewer_r.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
-
-    def view_structure_ZB_l(formula):
-        viewer_l.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
-
-    def view_structure_ZB_r(formula):
-        viewer_r.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
-
-    def update_point_RS(trace, points, selector):
+    def update_point_RS(self, trace, points, selector):
         # changes the points labeled with a cross on the map.
         if not points.point_inds:
             return
 
-        symbols_RS = list(scatter_RS.marker.symbol)
-        symbols_ZB = list(scatter_ZB.marker.symbol)
+        symbols_RS = list(self.scatter_RS.marker.symbol)
+        symbols_ZB = list(self.scatter_ZB.marker.symbol)
 
         # The element previously marked with x/cross is marked with circle as default value
-        if widg_checkbox_l.value:
+        if self.widg_checkbox_l.value:
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
-        if widg_checkbox_r.value:
+        if self.widg_checkbox_r.value:
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
 
-        if widg_checkbox_l.value:
+        if self.widg_checkbox_l.value:
             symbols_RS[points.point_inds[0]] = 'x'
-        if widg_checkbox_r.value:
+        if self.widg_checkbox_r.value:
             symbols_RS[points.point_inds[0]] = 'cross'
 
-        with fig.batch_update():
-            scatter_RS.marker.symbol = symbols_RS
-            scatter_ZB.marker.symbol = symbols_ZB
+        with self.fig.batch_update():
+            self.scatter_RS.marker.symbol = symbols_RS
+            self.scatter_ZB.marker.symbol = symbols_ZB
 
-        set_markers_size(feature=widg_featmarker.value)
+        self.set_markers_size(feature=self.widg_featmarker.value)
         formula = trace['text'][points.point_inds[0]][0]
 
-        if widg_checkbox_l.value:
-            widg_compound_text_l.value = formula
-            view_structure_RS_l(formula)
-        if widg_checkbox_r.value:
-            widg_compound_text_r.value = formula
-            view_structure_RS_r(formula)
+        if self.widg_checkbox_l.value:
+            self.widg_compound_text_l.value = formula
+            self.view_structure_RS_l(formula)
+        if self.widg_checkbox_r.value:
+            self.widg_compound_text_r.value = formula
+            self.view_structure_RS_r(formula)
 
-    def update_point_ZB(trace, points, selector):
+    def update_point_ZB(self, trace, points, selector):
         if not points.point_inds:
             return
 
-        symbols_RS = list(scatter_RS.marker.symbol)
-        symbols_ZB = list(scatter_ZB.marker.symbol)
+        symbols_RS = list(self.scatter_RS.marker.symbol)
+        symbols_ZB = list(self.scatter_ZB.marker.symbol)
 
         # The element previously marked with x/cross is marked with circle as default value
-        if widg_checkbox_l.value:
+        if self.widg_checkbox_l.value:
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
-        if widg_checkbox_r.value:
+        if self.widg_checkbox_r.value:
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = marker_symbol
+                symbols_RS[point] = self.marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = marker_symbol
+                    symbols_ZB[point] = self.marker_symbol
                 except:
                     pass
 
-        if widg_checkbox_l.value:
+        if self.widg_checkbox_l.value:
             symbols_ZB[points.point_inds[0]] = 'x'
-        if widg_checkbox_r.value:
+        if self.widg_checkbox_r.value:
             symbols_ZB[points.point_inds[0]] = 'cross'
 
-        with fig.batch_update():
-            scatter_RS.marker.symbol = symbols_RS
-            scatter_ZB.marker.symbol = symbols_ZB
+        with self.fig.batch_update():
+            self.scatter_RS.marker.symbol = symbols_RS
+            self.scatter_ZB.marker.symbol = symbols_ZB
 
-        set_markers_size(feature=widg_featmarker.value)
+        self.set_markers_size(feature=self.widg_featmarker.value)
         formula = trace['text'][points.point_inds[0]][0]
 
-        if widg_checkbox_l.value:
-            widg_compound_text_l.value = formula
-            view_structure_ZB_l(formula)
-        if widg_checkbox_r.value:
-            widg_compound_text_r.value = formula
-            view_structure_ZB_r(formula)
+        if self.widg_checkbox_l.value:
+            self.widg_compound_text_l.value = formula
+            self.view_structure_ZB_l(formula)
+        if self.widg_checkbox_r.value:
+            self.widg_compound_text_r.value = formula
+            self.view_structure_ZB_r(formula)
 
-    scatter_RS.on_click(update_point_RS)
-    scatter_ZB.on_click(update_point_ZB)
+    def view(self):
 
-    text_RS = []
-    for material in D_selected_df['Chem Formula'].tolist():
-        text_RS.append(material + ' - RS structure')
-    text_ZB = []
-    for material in D_selected_df['Chem Formula'].tolist():
-        text_ZB.append(material + ' - ZB structure')
+        self.widg_featx.observe(self.handle_xfeat_change, names='value')
+        self.widg_featy.observe(self.handle_yfeat_change, names='value')
+        self.widg_featmarker.observe(self.handle_markerfeat_change, names='value')
+        self.widg_checkbox_l.observe(self.handle_checkbox_l, names='value')
+        self.widg_checkbox_r.observe(self.handle_checkbox_r, names='value')
+        self.widg_display_button_l.on_click(self.display_button_l_clicked)
+        self.widg_display_button_r.on_click(self.display_button_r_clicked)
+        self.widg_update_button.on_click(self.update_button_clicked)
+        self.widg_reset_button.on_click(self.reset_button_clicked)
+        self.widg_print_button.on_click(self.print_button_clicked)
+        self.scatter_RS.on_click(self.update_point_RS)
+        self.scatter_ZB.on_click(self.update_point_ZB)
 
-    return container
+        output_l = widgets.Output()
+        output_r = widgets.Output()
+        output_l.layout = widgets.Layout(width="400px", height='350px')
+        output_r.layout = widgets.Layout(width="400px", height='350px')
+
+        with output_l:
+            display(self.viewer_l)
+        with output_r:
+            display(self.viewer_r)
+
+        box_layout = widgets.Layout(
+            border='dashed 1px',
+        )
+        box_features = widgets.HBox([
+            widgets.VBox([self.widg_featx, self.widg_featy, self.widg_featmarker]),
+            widgets.VBox([widgets.HBox([self.widg_markersize, self.widg_crosssize]),
+                          widgets.HBox([self.widg_fontsize, self.widg_fontfamily]),
+                          self.widg_bgcolor,
+                          widgets.HBox([self.widg_update_button, self.widg_reset_button]),
+                          widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale]),
+                          self.widg_print_button],
+                         layout=box_layout),
+        ])
+
+        container = widgets.VBox([box_features, self.fig,
+                                  widgets.HBox([
+                                      widgets.VBox(
+                                          [widgets.HBox([self.widg_compound_text_l, self.widg_display_button_l,
+                                                         self.widg_img1, self.widg_checkbox_l]),
+                                           output_l]),
+                                      widgets.VBox(
+                                          [widgets.HBox([self.widg_compound_text_r, self.widg_display_button_r,
+                                                         self.widg_img2, self.widg_checkbox_r]),
+                                           output_r]),
+                                  ])
+                                  ])
+
+        display(container)
 
 
 def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None, legend=None, unit=None):
