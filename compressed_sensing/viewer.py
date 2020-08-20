@@ -3,14 +3,14 @@ import ipywidgets as widgets
 from jupyter_jsmol import JsmolView
 import numpy as np
 
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
-from bokeh.io import show, output_notebook
-from bokeh.plotting import figure, show
-from bokeh.embed import components
-import itertools
-from bokeh.palettes import Dark2_5 as palette
-
-output_notebook()
+# from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
+# from bokeh.io import show, output_notebook
+# from bokeh.plotting import figure, show
+# from bokeh.embed import components
+# import itertools
+# from bokeh.palettes import Dark2_5 as palette
+#
+# output_notebook()
 
 
 def make_interactive_plot(df_D, sisso, D_selected_df):
@@ -28,6 +28,13 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
     intercept = sisso.intercept
 
     current_features = [0, 1]
+
+    marker_size_default = 7
+    cross_size_default = 15
+    font_size = 12
+    font_family = 'Helvetica'
+    bg_color = 'rgb(229, 236, 246)'
+    marker_symbol = 'circle'
 
     def f_x(x):
         if current_features[0] == current_features[1]:
@@ -143,9 +150,9 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
         value=features[1]
     )
     widg_featmarker = widgets.Dropdown(
-        description='Marker size',
-        options=['Default'] + features,
-        value='Default',
+        description="Marker",
+        options=['Default size'] + features,
+        value='Default size',
     )
     widg_compound_text_l = widgets.Text(
         placeholder='...',
@@ -178,6 +185,36 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
         layout=widgets.Layout(width='20px'),
         description='+'
     )
+    widg_markersize = widgets.Text(
+        placeholder=str(marker_size_default),
+        description='Marker size',
+        value=str(marker_size_default)
+    )
+    widg_fontsize = widgets.Text(
+        placeholder=str(font_size),
+        description='Font size',
+        value=str(font_size)
+    )
+    widg_fontfamily = widgets.Text(
+        placeholder=str(font_family),
+        description='Font family',
+        value='Helvetica'
+    )
+    widg_bgcolor = widgets.Text(
+        placeholder=str(bg_color),
+        description='BG color',
+        value='rgb(229, 236, 246)'
+    )
+    widg_markersymbol = widgets.Text(
+        placeholder=str(marker_symbol),
+        description='Symbol',
+        value=str(marker_symbol)
+    )
+    widg_update_button = widgets.Button(
+        description='Update',
+        layout=widgets.Layout(width='100px')
+    )
+
     file1 = open("./assets/compressed_sensing/cross.png", "rb")
     image1 = file1.read()
     widg_img1 = widgets.Image(
@@ -195,12 +232,12 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
         height=30,
     )
 
-    def set_markers_size(feature='Default'):
+    def set_markers_size(feature='Default size', marker_size=marker_size_default):
         # Defines the size of the markers based on the input feature.
         # In case of default feature all markers have the same size.
         # Points marked with x/cross are set with a specific size
 
-        if feature == 'Default':
+        if feature == 'Default size':
 
             sizes_RS = scatter_RS.marker.size = [marker_size] * RS_npoints
             sizes_ZB = scatter_ZB.marker.size = [marker_size] * ZB_npoints
@@ -209,20 +246,20 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
             symbols_ZB = list(scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('x')
-                sizes_RS[point] = cross_size
+                sizes_RS[point] = cross_size_default
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    sizes_ZB[point] = cross_size
+                    sizes_ZB[point] = cross_size_default
                 except:
                     pass
             try:
                 point = symbols_RS.index('cross')
-                sizes_RS[point] = cross_size
+                sizes_RS[point] = cross_size_default
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    sizes_ZB[point] = cross_size
+                    sizes_ZB[point] = cross_size_default
                 except:
                     pass
             with fig.batch_update():
@@ -297,11 +334,11 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
             symbols_ZB = list(scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
             if structure_l == 'RS':
@@ -329,11 +366,11 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
             symbols_ZB = list(scatter_ZB.marker.symbol)
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
             if structure_r == 'RS':
@@ -346,6 +383,19 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
                 scatter_RS.marker.symbol = symbols_RS
                 scatter_ZB.marker.symbol = symbols_ZB
             set_markers_size(feature=widg_featmarker.value)
+
+    def update_button_clicked(button):
+
+        try:
+            fig.update_layout(
+                plot_bgcolor=widg_bgcolor.value,
+                font=dict(
+                    size=int(widg_fontsize.value),
+                    family=widg_fontfamily.value
+                )
+            )
+        except:
+            pass
 
     def handle_checkbox_l(change):
         if change.new:
@@ -362,10 +412,11 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
     widg_featx.observe(handle_xfeat_change, names='value')
     widg_featy.observe(handle_yfeat_change, names='value')
     widg_featmarker.observe(handle_markerfeat_change, names='value')
-    widg_display_button_l.on_click(display_button_l_clicked)
-    widg_display_button_r.on_click(display_button_r_clicked)
     widg_checkbox_l.observe(handle_checkbox_l, names='value')
     widg_checkbox_r.observe(handle_checkbox_r, names='value')
+    widg_display_button_l.on_click(display_button_l_clicked)
+    widg_display_button_r.on_click(display_button_r_clicked)
+    widg_update_button.on_click(update_button_clicked)
 
     output_l = widgets.Output()
     output_r = widgets.Output()
@@ -380,13 +431,20 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
     with output_r:
         display(viewer_r)
 
-    marker_size = 7
-    cross_size = 15
-    scatter_RS.marker.symbol = ["circle"] * RS_npoints
-    scatter_ZB.marker.symbol = ["circle"] * ZB_npoints
+    scatter_RS.marker.symbol = [marker_symbol] * RS_npoints
+    scatter_ZB.marker.symbol = [marker_symbol] * ZB_npoints
     set_markers_size()
 
-    box_features = widgets.HBox([widgets.VBox([widg_featx, widg_featy]), widg_featmarker])
+    box_layout = widgets.Layout(
+        border='dashed 1px',
+    )
+    box_features = widgets.HBox([
+        widgets.VBox([widg_featx, widg_featy, widg_featmarker]),
+        widgets.VBox([widgets.HBox([widg_markersize, widg_markersymbol]),
+                      widgets.HBox([widg_fontsize, widg_fontfamily]),
+                      widg_bgcolor, widg_update_button], layout=box_layout),
+    ])
+
     container = widgets.VBox([box_features, fig,
                               widgets.HBox([
                                   widgets.VBox(
@@ -427,21 +485,21 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
         if widg_checkbox_l.value:
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
         if widg_checkbox_r.value:
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
 
@@ -475,21 +533,21 @@ def make_interactive_plot(df_D, sisso, D_selected_df):
         if widg_checkbox_l.value:
             try:
                 point = symbols_RS.index('x')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('x')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
         if widg_checkbox_r.value:
             try:
                 point = symbols_RS.index('cross')
-                symbols_RS[point] = 'circle'
+                symbols_RS[point] = marker_symbol
             except:
                 try:
                     point = symbols_ZB.index('cross')
-                    symbols_ZB[point] = 'circle'
+                    symbols_ZB[point] = marker_symbol
                 except:
                     pass
 
