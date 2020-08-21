@@ -3,15 +3,6 @@ import ipywidgets as widgets
 from jupyter_jsmol import JsmolView
 import numpy as np
 
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
-from bokeh.io import show, output_notebook
-from bokeh.plotting import figure, show
-from bokeh.embed import components
-import itertools
-from bokeh.palettes import Dark2_5 as palette
-
-output_notebook()
-
 class Visualizer:
 
     def __init__(self, df_D, sisso, D_selected_df):
@@ -24,8 +15,16 @@ class Visualizer:
         self.current_features = [0, 1]
         self.font_size = 12
         self.cross_size = 15
-        self.font_family = 'Helvetica'
-        self.bg_color = 'rgb(229,236,246)'
+        self.line_width = 1
+        self.font_families = ['Helvetica',
+                              'Open Sans',
+                              'Montserrat',
+                              'Source Sans Pro',
+                              'Times New Roman',
+                              'Arial']
+        self.bg_color = 'rgba(229,236,246, 0.7)'
+        self.zb_color = "rgb(235, 130, 115)"
+        self.rs_color = "rgb(138, 147, 248)"
         self.total_features = sisso.n_nonzero_coefs
         self.features = []
         for i in range(self.total_features):
@@ -39,6 +38,7 @@ class Visualizer:
         self.fig = go.FigureWidget()
         self.viewer_l = JsmolView()
         self.viewer_r = JsmolView()
+        self.bg_toggle = True
 
         self.text_RS = []
         for material in D_selected_df['Chem Formula'].tolist():
@@ -72,6 +72,7 @@ class Visualizer:
                     "ΔE reference:  %{customdata[0]:,.4f}<br>" +
                     "ΔE predicted:  %{customdata[1]:,.4f}<br>",
                     name='RS',
+                    marker=dict(color=self.rs_color)
                 )
             ))
         self.fig.add_trace(
@@ -89,6 +90,7 @@ class Visualizer:
                     "ΔE reference:  %{customdata[0]:,.4f}<br>" +
                     "ΔE predicted:  %{customdata[1]:,.4f}<br>",
                     name='ZB',
+                    marker=dict(color=self.zb_color)
                 )
             ))
         self.fig.add_trace(
@@ -96,8 +98,8 @@ class Visualizer:
                 go.Scatter(
                     x=self.line_x,
                     y=self.line_y,
-                    marker=dict(color='Grey'),
-                    name='Separation line'
+                    line=dict(color='Grey', width=1),
+                    name='Classification line',
                 )
             )
         )
@@ -130,11 +132,20 @@ class Visualizer:
             ),
         )
 
-        self.RS_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'RS'])
-        self.ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'])
         self.scatter_RS = self.fig.data[0]
         self.scatter_ZB = self.fig.data[1]
         self.scatter_line = self.fig.data[2]
+
+        self.fig.update_layout(
+            plot_bgcolor=self.bg_color,
+            font=dict(
+                size=int(self.font_size),
+                family=self.font_families[0]
+            )
+        )
+        self.RS_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'RS'])
+        self.ZB_npoints = len(D_selected_df.loc[D_selected_df['Structure'] == 'ZB'])
+
         self.scatter_RS.marker.symbol = [self.marker_symbol] * self.RS_npoints
         self.scatter_ZB.marker.symbol = [self.marker_symbol] * self.ZB_npoints
         self.set_markers_size()
@@ -177,13 +188,12 @@ class Visualizer:
         self.widg_checkbox_l = widgets.Checkbox(
             value=True,
             indent=False,
-            layout=widgets.Layout(width='20px')
+            layout=widgets.Layout(width='50px')
         )
         self.widg_checkbox_r = widgets.Checkbox(
             value=False,
             indent=False,
-            layout=widgets.Layout(width='20px'),
-            description='+'
+            layout=widgets.Layout(width='50px'),
         )
         self.widg_markersize = widgets.Text(
             placeholder=str(self.marker_size),
@@ -200,15 +210,34 @@ class Visualizer:
             description='Font size',
             value=str(self.font_size)
         )
-        self.widg_fontfamily = widgets.Text(
-            placeholder=str(self.font_family),
+        self.widg_linewidth = widgets.Text(
+            placeholder=str(self.line_width),
+            description='Line width',
+            value=str(self.line_width)
+        )
+        self.widg_fontfamily = widgets.Dropdown(
+            options=self.font_families,
             description='Font family',
-            value='Helvetica'
+            value=self.font_families[0]
+        )
+        self.widg_bgtoggle_button = widgets.Button(
+            description='Toggle on/off background',
+            layout=widgets.Layout(width='300px'),
         )
         self.widg_bgcolor = widgets.Text(
             placeholder=str(self.bg_color),
-            description='BG color',
-            value='rgb(229, 236, 246)'
+            description='Color',
+            value=str(self.bg_color),
+        )
+        self.widg_rscolor = widgets.Text(
+            placeholder=str(self.rs_color),
+            description='RS color',
+            value=str(self.rs_color),
+        )
+        self.widg_zbcolor = widgets.Text(
+            placeholder=str(self.zb_color),
+            description='ZB color',
+            value=str(self.zb_color),
         )
         self.widg_markersymbol = widgets.Text(
             placeholder=str(self.marker_symbol),
@@ -244,6 +273,10 @@ class Visualizer:
         self.widg_print_button = widgets.Button(
             description='Print',
             layout=widgets.Layout(width='300px')
+        )
+        self.widg_description = widgets.Label(
+            value='Tick the box next to the cross symbols in order to choose which windows visualizes the next '
+                  'structure selected in the map above.'
         )
 
         file1 = open("./assets/compressed_sensing/cross.png", "rb")
@@ -430,6 +463,19 @@ class Visualizer:
         self.set_markers_size(feature=self.widg_featmarker.value)
 
         try:
+          self.scatter_RS.update(marker=dict(color=self.widg_rscolor.value))
+        except:
+           pass
+        try:
+          self.scatter_ZB.update(marker=dict(color=self.widg_zbcolor.value))
+        except:
+           pass
+        try:
+           self.scatter_line.update(line=dict(width=int(self.widg_linewidth.value))),
+        except:
+            pass
+
+        try:
             self.fig.update_layout(
                 plot_bgcolor=self.widg_bgcolor.value,
                 font=dict(
@@ -439,6 +485,19 @@ class Visualizer:
             )
         except:
             pass
+
+    def bgtoggle_button_clicked(self, button):
+
+        if self.bg_toggle:
+            self.bg_toggle = False
+            self.fig.update_layout(
+                plot_bgcolor='white'
+            )
+        else:
+            self.bg_toggle = True
+            self.fig.update_layout(
+                plot_bgcolor=self.widg_bgcolor.value
+            )
 
     def print_button_clicked(self, button):
 
@@ -583,6 +642,7 @@ class Visualizer:
         self.widg_update_button.on_click(self.update_button_clicked)
         self.widg_reset_button.on_click(self.reset_button_clicked)
         self.widg_print_button.on_click(self.print_button_clicked)
+        self.widg_bgtoggle_button.on_click(self.bgtoggle_button_clicked)
         self.scatter_RS.on_click(self.update_point_RS)
         self.scatter_ZB.on_click(self.update_point_ZB)
 
@@ -596,21 +656,12 @@ class Visualizer:
         with output_r:
             display(self.viewer_r)
 
-        box_layout = widgets.Layout(
-            border='dashed 1px',
-        )
-        box_features = widgets.HBox([
-            widgets.VBox([self.widg_featx, self.widg_featy, self.widg_featmarker]),
-            widgets.VBox([widgets.HBox([self.widg_markersize, self.widg_crosssize]),
-                          widgets.HBox([self.widg_fontsize, self.widg_fontfamily]),
-                          self.widg_bgcolor,
-                          widgets.HBox([self.widg_update_button, self.widg_reset_button]),
-                          widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale]),
-                          self.widg_print_button],
-                         layout=box_layout),
-        ])
+        box_print = widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale, self.widg_print_button])
 
-        container = widgets.VBox([box_features, self.fig,
+        box_features = widgets.HBox([self.widg_featx, self.widg_featy, self.widg_featmarker])
+
+        container = widgets.VBox([box_print, box_features, self.fig,
+                                  self.widg_description,
                                   widgets.HBox([
                                       widgets.VBox(
                                           [widgets.HBox([self.widg_compound_text_l, self.widg_display_button_l,
@@ -625,58 +676,15 @@ class Visualizer:
 
         display(container)
 
+    def plot_appearance(self):
 
-def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None, legend=None, unit=None):
-    # if xs ist not list of lists/arrays make it so, as later the function iterates over xs and ys
-    if not isinstance(xs[0], (list, np.ndarray)):
-        xs = [xs]
-        ys = [ys]
-    # make sure that xs and ys ist list (of lists/arrays) as later the function will
-    # do the list operation xs+ys
-    elif not isinstance(xs, list) or not isinstance(ys, list):
-        xs = list(xs)
-        ys = list(ys)
+     box = widgets.VBox([widgets.HBox([self.widg_markersize, self.widg_crosssize]),
+                    self.widg_linewidth,
+                    widgets.HBox([self.widg_fontsize, self.widg_fontfamily]),
+                    widgets.HBox([self.widg_rscolor, self.widg_zbcolor]),
+                    widgets.HBox([self.widg_bgtoggle_button, self.widg_bgcolor]),
+                    widgets.HBox([self.widg_update_button, self.widg_reset_button])])
 
-    if unit is None:
-        unit = ''
+     display(box)
 
-    hover = HoverTool(
-        tooltips="""
-            <div>
-                <div>
-                    <span style="font-size: 15px; font-weight: bold;">@data_point_labels</span>
-                </div>
-                <div >
-                    <span style="font-size: 10px;">Abs. error = @abs_error %s</span><br>
-                </div>
-                <div>
-                    <span style="font-size: 10px;">Location:</span>
-                    <span style="font-size:  10px; color: #696;">($x, $y)</span>
-                </div>
-            </div>
-            """ % unit
-    )
 
-    colors = itertools.cycle(palette)
-
-    p = figure(plot_width=600, plot_height=300, tools=[hover, "box_zoom", "pan", "reset"],
-               x_axis_label=x_label, y_axis_label=y_label)
-
-    # plot reference diagonal
-    xy_min = min([min(arr) for arr in xs + ys])
-    xy_max = max([max(arr) for arr in xs + ys])
-    p.line([xy_min, xy_max], [xy_min, xy_max])
-
-    for i, color in zip(range(len(xs)), colors):
-        source = ColumnDataSource(
-            data=dict(
-                x=xs[i],
-                y=ys[i],
-                data_point_labels=data_point_labels[i],
-                abs_error=abs(np.array(xs[i]) - np.array(ys[i]))
-            )
-        )
-
-        p.circle('x', 'y', size=8, source=source, legend=legend[i], color=color)
-    p.legend.location = 'top_left'
-    show(p)
