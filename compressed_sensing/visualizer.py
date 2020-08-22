@@ -40,6 +40,7 @@ class Visualizer:
         self.viewer_l = JsmolView()
         self.viewer_r = JsmolView()
         self.bg_toggle = True
+        self.compounds_list = df_D.index.tolist()
 
         self.text_RS = []
         for material in D_selected_df['Chem Formula'].tolist():
@@ -163,15 +164,17 @@ class Visualizer:
             options=['Default size'] + self.features,
             value='Default size',
         )
-        self.widg_compound_text_l = widgets.Text(
+        self.widg_compound_text_l = widgets.Combobox(
             placeholder='...',
             description='Compound:',
+            options=self.compounds_list,
             disabled=False,
             layout=widgets.Layout(width='200px')
         )
-        self.widg_compound_text_r = widgets.Text(
+        self.widg_compound_text_r = widgets.Combobox(
             placeholder='...',
             description='Compound:',
+            options=self.compounds_list,
             disabled=False,
             layout=widgets.Layout(width='200px')
         )
