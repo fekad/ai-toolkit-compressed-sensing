@@ -17,14 +17,23 @@ class Visualizer:
         self.font_size = 12
         self.cross_size = 15
         self.line_width = 1
-        self.font_families = ['Helvetica',
+        self.font_families = ['Source Sans Pro',
+                              'Helvetica',
                               'Open Sans',
-                              'Montserrat',
-                              'Source Sans Pro',
                               'Times New Roman',
-                              'Arial']
-        self.bg_color = 'rgba(229,236,246, 0.7)'
-        self.zb_color = "rgb(235, 130, 115)"
+                              'Arial',
+                              'Verdana',
+                              'Courier New',
+                              'Comic Sans MS',
+                              ]
+        self.line_styles = ["dash",
+                            "solid",
+                            "dot",
+                            "longdash",
+                            "dashdot",
+                            "longdashdot"]
+        self.bg_color = 'rgba(229,236,246, 0.5)'
+        self.zb_color = "#EB8273"
         self.rs_color = "rgb(138, 147, 248)"
         self.total_features = sisso.n_nonzero_coefs
         self.features = []
@@ -100,7 +109,7 @@ class Visualizer:
                 go.Scatter(
                     x=self.line_x,
                     y=self.line_y,
-                    line=dict(color='Grey', width=1),
+                    line=dict(color='Grey', width=1, dash=self.line_styles[0]),
                     name='Classification line',
                 )
             )
@@ -196,25 +205,30 @@ class Visualizer:
             indent=False,
             layout=widgets.Layout(width='50px'),
         )
-        self.widg_markersize = widgets.Text(
+        self.widg_markersize = widgets.BoundedIntText(
             placeholder=str(self.marker_size),
             description='Marker size',
             value=str(self.marker_size)
         )
-        self.widg_crosssize = widgets.Text(
+        self.widg_crosssize = widgets.BoundedIntText(
             placeholder=str(self.cross_size),
             description='Cross size',
             value=str(self.cross_size)
         )
-        self.widg_fontsize = widgets.Text(
+        self.widg_fontsize = widgets.BoundedIntText(
             placeholder=str(self.font_size),
             description='Font size',
             value=str(self.font_size)
         )
-        self.widg_linewidth = widgets.Text(
+        self.widg_linewidth = widgets.BoundedIntText(
             placeholder=str(self.line_width),
             description='Line width',
             value=str(self.line_width)
+        )
+        self.widg_linestyle = widgets.Dropdown(
+            options=self.line_styles,
+            description='Line style',
+            value=self.line_styles[0],
         )
         self.widg_fontfamily = widgets.Dropdown(
             options=self.font_families,
@@ -245,8 +259,8 @@ class Visualizer:
             description='Symbol',
             value=str(self.marker_symbol)
         )
-        self.widg_update_button = widgets.Button(
-            description='Update',
+        self.widg_updatecolor_button = widgets.Button(
+            description='Update colors',
             layout=widgets.Layout(width='150px')
         )
         self.widg_reset_button = widgets.Button(
@@ -279,7 +293,18 @@ class Visualizer:
             value='Tick the box next to the cross symbols in order to choose which windows visualizes the next '
                   'structure selected in the map above.'
         )
-
+        self.widg_colordescription = widgets.Label(
+            value='In the boxes below, the colors used in the plot. Colors can be written as a text string, i.e. red, '
+                  'green,...,  or in a rgb/a, hex format. '
+        )
+        self.widg_colordescription2 = widgets.Label(
+            value="After modifying a specific field, click on the 'Update colors' button to display the changes in "
+                  "the plot."
+        )
+        self.widg_printdescription = widgets.Label(
+            value="Click 'Print' to export the plot in the desired format. The resolution of the image can be increased"
+                  " by increasing the 'Scale' value."
+        )
         file1 = open("./assets/compressed_sensing/cross.png", "rb")
         image1 = file1.read()
         self.widg_img1 = widgets.Image(
@@ -297,19 +322,21 @@ class Visualizer:
             height=30,
         )
 
-    def update_markers(self):
-        with self.fig.batch_update():
-            self.scatter_RS.marker.size = self.RS_sizes
-            self.scatter_ZB.marker.size = self.ZB_sizes
-            self.scatter_RS.marker.symbol = self.RS_symbols
-            self.scatter_ZB.marker.symbol = self.ZB_symbols
-
     def f_x(self, x):
+        # Gives the classifications line
         if self.current_features[0] == self.current_features[1]:
             return x
         else:
             return -x * self.coefficients[self.current_features[0]] / self.coefficients[self.current_features[1]] - \
                    self.intercept / self.coefficients[self.current_features[1]]
+
+    def update_markers(self):
+        # Markers size and symbol are updated simultaneously
+        with self.fig.batch_update():
+            self.scatter_RS.marker.size = self.RS_sizes
+            self.scatter_ZB.marker.size = self.ZB_sizes
+            self.scatter_RS.marker.symbol = self.RS_symbols
+            self.scatter_ZB.marker.symbol = self.ZB_symbols
 
     def set_markers_size(self, feature='Default size'):
         # Defines the size of the markers based on the input feature.
@@ -467,13 +494,8 @@ class Visualizer:
             self.set_markers_size(feature=self.widg_featmarker.value)
             self.update_markers()
 
-    def update_button_clicked(self, button):
+    def updatecolor_button_clicked(self, button):
 
-        self.marker_size = int(self.widg_markersize.value)
-        self.cross_size = int(self.widg_crosssize.value)
-
-        self.set_markers_size(feature=self.widg_featmarker.value)
-        self.update_markers()
         try:
           self.scatter_RS.update(marker=dict(color=self.widg_rscolor.value))
         except:
@@ -483,20 +505,42 @@ class Visualizer:
         except:
            pass
         try:
-           self.scatter_line.update(line=dict(width=int(self.widg_linewidth.value))),
+            self.fig.update_layout(plot_bgcolor=self.widg_bgcolor.value)
         except:
             pass
 
-        try:
-            self.fig.update_layout(
-                plot_bgcolor=self.widg_bgcolor.value,
-                font=dict(
-                    size=int(self.widg_fontsize.value),
-                    family=self.widg_fontfamily.value
-                )
-            )
-        except:
-            pass
+    def handle_fontfamily_change(self, change):
+
+        self.fig.update_layout(
+            font=dict(family=change.new)
+        )
+
+    def handle_fontsize_change(self, change):
+
+        self.fig.update_layout(
+            font=dict(size=change.new)
+        )
+
+    def handle_markersize_change(self, change):
+
+        self.marker_size = int(change.new)
+        self.set_markers_size(feature=self.widg_featmarker.value)
+        self.update_markers()
+
+    def handle_crossize_change(self, change):
+
+        self.cross_size = int(change.new)
+        self.set_markers_size(feature=self.widg_featmarker.value)
+        self.update_markers()
+
+    def handle_linewidth_change(self, change):
+
+        self.line_width = change.new
+        self.scatter_line.update(line=dict(width=int(self.widg_linewidth.value))),
+
+    def handle_linestyle_change(self, change):
+
+        self.scatter_line.update(line=dict(dash=change.new))
 
     def bgtoggle_button_clicked(self, button):
 
@@ -650,12 +694,18 @@ class Visualizer:
         self.widg_checkbox_r.observe(self.handle_checkbox_r, names='value')
         self.widg_display_button_l.on_click(self.display_button_l_clicked)
         self.widg_display_button_r.on_click(self.display_button_r_clicked)
-        self.widg_update_button.on_click(self.update_button_clicked)
+        self.widg_updatecolor_button.on_click(self.updatecolor_button_clicked)
         self.widg_reset_button.on_click(self.reset_button_clicked)
         self.widg_print_button.on_click(self.print_button_clicked)
         self.widg_bgtoggle_button.on_click(self.bgtoggle_button_clicked)
+        self.widg_linestyle.observe(self.handle_linestyle_change, names='value')
         self.scatter_RS.on_click(self.update_point_RS)
         self.scatter_ZB.on_click(self.update_point_ZB)
+        self.widg_markersize.observe(self.handle_markersize_change, names='value')
+        self.widg_crosssize.observe(self.handle_crossize_change, names='value')
+        self.widg_linewidth.observe(self.handle_linewidth_change, names='value')
+        self.widg_fontfamily.observe(self.handle_fontfamily_change, names='value')
+        self.widg_fontsize.observe(self.handle_fontsize_change, names='value')
 
         output_l = widgets.Output()
         output_r = widgets.Output()
@@ -670,7 +720,7 @@ class Visualizer:
         box_print = widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale, self.widg_print_button])
 
         box_features = widgets.HBox([self.widg_featx, self.widg_featy, self.widg_featmarker])
-        container = widgets.VBox([box_print, box_features, self.fig,
+        container = widgets.VBox([self.widg_printdescription, box_print, box_features, self.fig,
                                   self.widg_description,
                                   widgets.HBox([
                                       widgets.VBox(
@@ -689,11 +739,12 @@ class Visualizer:
     def plot_appearance(self):
 
      box = widgets.VBox([widgets.HBox([self.widg_markersize, self.widg_crosssize]),
-                    self.widg_linewidth,
+                    widgets.HBox([self.widg_linewidth, self.widg_linestyle]),
                     widgets.HBox([self.widg_fontsize, self.widg_fontfamily]),
+                    self.widg_colordescription, self.widg_colordescription2,
                     widgets.HBox([self.widg_rscolor, self.widg_zbcolor]),
                     widgets.HBox([self.widg_bgtoggle_button, self.widg_bgcolor]),
-                    widgets.HBox([self.widg_update_button, self.widg_reset_button])])
+                    widgets.HBox([self.widg_updatecolor_button, self.widg_reset_button])])
 
      display(box)
 
