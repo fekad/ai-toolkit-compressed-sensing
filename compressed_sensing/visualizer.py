@@ -2,6 +2,17 @@ import plotly.graph_objects as go
 import ipywidgets as widgets
 from jupyter_jsmol import JsmolView
 import numpy as np
+from IPython.display import display, HTML
+import os
+
+def javascript(*st,file=None):
+    if len(st) == 1 and file is None:
+        s = st[0]
+    elif len(st) == 0 and file is not None:
+        s = open(file).read()
+    else:
+        raise ValueError('Pass either a string or file=.')
+    display(HTML("<script type='text/javascript'>" + s + "</script>"))
 
 
 class Visualizer:
@@ -110,7 +121,7 @@ class Visualizer:
                     x=self.line_x,
                     y=self.line_y,
                     line=dict(color='Grey', width=1, dash=self.line_styles[0]),
-                    name='Classification line',
+                    name=r'Classification' + '<br>' + 'line',
                 )
             )
         )
@@ -557,7 +568,13 @@ class Visualizer:
 
     def print_button_clicked(self, button):
 
-        self.fig.write_image(self.widg_plot_name.value + '.' + self.widg_plot_format.value, scale=self.widg_scale.value)
+        try:
+            os.mkdir("./plots")
+        except:
+            pass
+        file_name = self.widg_plot_name.value + '.' + self.widg_plot_format.value
+        self.fig.write_image("./plots/" + file_name, scale=self.widg_scale.value)
+        javascript("window.open('./plots/" + str(file_name) + "' )")
 
     def reset_button_clicked(self, button):
 
