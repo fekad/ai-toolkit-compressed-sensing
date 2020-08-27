@@ -2,17 +2,7 @@ import plotly.graph_objects as go
 import ipywidgets as widgets
 from jupyter_jsmol import JsmolView
 import numpy as np
-from IPython.display import display, HTML
-import os
-
-def javascript(*st,file=None):
-    if len(st) == 1 and file is None:
-        s = st[0]
-    elif len(st) == 0 and file is not None:
-        s = open(file).read()
-    else:
-        raise ValueError('Pass either a string or file=.')
-    display(HTML("<script type='text/javascript'>" + s + "</script>"))
+from IPython.display import display, HTML, FileLink
 
 
 class Visualizer:
@@ -298,6 +288,9 @@ class Visualizer:
         )
         self.widg_print_button = widgets.Button(
             description='Print',
+            layout=widgets.Layout(width='100px')
+        )
+        self.widg_print_out = widgets.Output(
             layout=widgets.Layout(width='300px')
         )
         self.widg_description = widgets.Label(
@@ -574,7 +567,11 @@ class Visualizer:
             pass
         file_name = self.widg_plot_name.value + '.' + self.widg_plot_format.value
         self.fig.write_image("./plots/" + file_name, scale=self.widg_scale.value)
-        javascript("window.open('./plots/" + str(file_name) + "' )")
+        self.widg_print_out.clear_output()
+        with self.widg_print_out:
+            local_file = FileLink('./plots/'+file_name, result_html_prefix="Click here to download: ")
+            display(local_file)
+        # javascript("window.open('./plots/" + str(file_name) + "' )")
 
     def reset_button_clicked(self, button):
 
@@ -734,7 +731,8 @@ class Visualizer:
         with output_r:
             display(self.viewer_r)
 
-        box_print = widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale, self.widg_print_button])
+        box_print = widgets.HBox([self.widg_plot_name, self.widg_plot_format, self.widg_scale,
+                                  self.widg_print_button, self.widg_print_out])
 
         box_features = widgets.HBox([self.widg_featx, self.widg_featy, self.widg_featmarker])
         container = widgets.VBox([self.widg_printdescription, box_print, box_features, self.fig,
