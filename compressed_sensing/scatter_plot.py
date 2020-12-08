@@ -5,7 +5,7 @@ from bokeh.plotting import figure, show
 from bokeh.embed import components
 import itertools
 from bokeh.palettes import Dark2_5 as palette
-
+import numpy as np
 output_notebook()
 
 def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None, legend=None, unit=None):
