@@ -404,7 +404,7 @@ class Visualizer:
             structure_l = self.df_selected[self.df_selected['Chem Formula'] ==
                                            self.widg_compound_text_l.value]['Structure'].values[0]
             self.viewer_l.script(
-                "load data/compressed_sensing/structures/" + structure_l + "_structures/"
+                "load data/compressed_sensing/structures/"
                 + self.widg_compound_text_l.value + ".xyz")
 
             symbols_RS = self.RS_symbols
@@ -438,7 +438,7 @@ class Visualizer:
             structure_r = self.df_selected[self.df_selected['Chem Formula'] ==
                                            self.widg_compound_text_r.value]['Structure'].values[0]
             self.viewer_r.script(
-                "load data/compressed_sensing/structures/" + structure_r + "_structures/"
+                "load data/compressed_sensing/structures/"
                 + self.widg_compound_text_r.value + ".xyz")
 
             symbols_RS = self.RS_symbols
@@ -604,17 +604,11 @@ class Visualizer:
         else:
             self.widg_checkbox_l.value = True
 
-    def view_structure_RS_l(self, formula):
-        self.viewer_l.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
+    def view_structure_l(self, formula):
+        self.viewer_l.script("load data/compressed_sensing/structures/" + formula + ".xyz")
 
-    def view_structure_RS_r(self, formula):
-        self.viewer_r.script("load data/compressed_sensing/structures/RS_structures/" + formula + ".xyz")
-
-    def view_structure_ZB_l(self, formula):
-        self.viewer_l.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
-
-    def view_structure_ZB_r(self, formula):
-        self.viewer_r.script("load data/compressed_sensing/structures/ZB_structures/" + formula + ".xyz")
+    def view_structure_r(self, formula):
+        self.viewer_r.script("load data/compressed_sensing/structures/" + formula + ".xyz")
 
     def update_point_RS(self, trace, points, selector):
         # changes the points labeled with a cross on the map.
@@ -659,10 +653,10 @@ class Visualizer:
         formula = trace['text'][points.point_inds[0]]
         if self.widg_checkbox_l.value:
             self.widg_compound_text_l.value = formula
-            self.view_structure_RS_l(formula)
+            self.view_structure_l(formula)
         if self.widg_checkbox_r.value:
             self.widg_compound_text_r.value = formula
-            self.view_structure_RS_r(formula)
+            self.view_structure_r(formula)
 
     def update_point_ZB(self, trace, points, selector):
         if not points.point_inds:
@@ -706,10 +700,10 @@ class Visualizer:
         formula = trace['text'][points.point_inds[0]]
         if self.widg_checkbox_l.value:
             self.widg_compound_text_l.value = formula
-            self.view_structure_ZB_l(formula)
+            self.view_structure_l(formula)
         if self.widg_checkbox_r.value:
             self.widg_compound_text_r.value = formula
-            self.view_structure_ZB_r(formula)
+            self.view_structure_r(formula)
 
     def show(self):
 
