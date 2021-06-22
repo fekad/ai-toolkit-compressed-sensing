@@ -54,7 +54,7 @@ class Visualizer:
         self.feat_space = feat_space
         self.total_features = sisso.n_dim
         self.feat_val_list = list(reversed([feat.value for feat in sisso.models[sisso.n_dim - 1][0].feats]))
-        self.features = list(reversed([str(feat) for feat in sisso.models[sisso.n_dim - 1][0].feats]))
+        self.features = list(reversed([str(feat.expr) for feat in sisso.models[sisso.n_dim - 1][0].feats]))
         self.df_selected = pd.DataFrame()
         for feat, values in zip(self.features, self.feat_val_list):
             self.df_selected[feat] = values
