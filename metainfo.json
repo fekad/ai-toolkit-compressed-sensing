@@ -41,6 +41,7 @@
       "LASSO",
       "SISSO",
       "Kernel ridge regression",
+      "Features selection",
       "Atomic features"
     ],
     "platform": [
