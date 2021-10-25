@@ -15,30 +15,32 @@
   "link_public": "https://analytics-toolkit.nomad-coe.eu/public/user-redirect/notebooks/tutorials/compressed_sensing.ipynb",
   "link_video": "https://www.youtube.com/watch?v=73mLp6C2opY",
   "link_paper": "https://th.fhi-berlin.mpg.de/site/uploads/Publications/NJP-19-023017-2017.pdf",
-  "updated": "2020-12-8",
+  "updated": "2020-09-20",
   "flags":{
     "featured": true,
     "top_of_list": false
   },
   "labels": {
     "application_keyword": [
-      "Compressed sensing",
-      "Symbolic regression",
-      "Descriptors"
+
     ],
     "application_section": [
       "Tutorials for artificial-intelligence methods"
     ],
     "application_system": [
-      "Octet binary materials"
+      "Octet binaries"
     ],
     "category": [
       "beginner_tutorial"
     ],
-    "data_analytics_method": [
+    "ai_methods": [
+      "Regression",
+      "Compressed sensing",
+      "Symbolic regression",
       "LASSO",
       "SISSO",
-      "Kernel ridge regression"
+      "Kernel ridge regression",
+      "Atomic features"
     ],
     "platform": [
       "jupyter"
