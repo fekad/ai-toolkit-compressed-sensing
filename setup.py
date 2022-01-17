@@ -21,7 +21,7 @@ setup(
     description=metainfo['title'],
     long_description=metainfo['description'],
     packages=find_packages(),
-    install_requires=['pandas', 'matplotlib', 'scikit-learn', 'bokeh', 'ase', 'numpy', 'colorcet', 'jupyter_jsmol==2021.3.0', 'plotly'],
+    install_requires=['pandas', 'matplotlib', 'scikit-learn', 'bokeh', 'ase', 'numpy', 'colorcet', 'jupyter_jsmol', 'plotly'],
 )
 
 
