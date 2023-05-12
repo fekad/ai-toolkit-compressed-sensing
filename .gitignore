@@ -4,6 +4,8 @@ notebook/data/
 notebook/feature_space/
 notebook/models/
 
+.bash_history
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
