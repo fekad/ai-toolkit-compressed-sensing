@@ -970,7 +970,7 @@ class Visualizer:
                                             self.widg_print_button, self.widg_print_out,
                                             ])
 
-        file1 = open("./assets/compressed_sensing/cross.png", "rb")
+        file1 = open("./assets/cross.png", "rb")
         image1 = file1.read()
         self.widg_img1 = widgets.Image(
             value=image1,
@@ -978,7 +978,7 @@ class Visualizer:
             width=30,
             height=30,
         )
-        file2 = open("./assets/compressed_sensing/cross2.png", "rb")
+        file2 = open("./assets/cross2.png", "rb")
         image2 = file2.read()
         self.widg_img2 = widgets.Image(
             value=image2,

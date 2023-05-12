@@ -1,3 +1,9 @@
+.local/
+.jupyter/
+notebook/data/
+notebook/feature_space/
+notebook/models/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
