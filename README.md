@@ -1,5 +1,5 @@
-# CompressedSensing4MaterialsScience
-A machine-learning tutorial on how to identify materials descriptors. The focus is laid on using the sure independence screening and sparsifying operator (SISSO) for regression.
+# Symbolic regression via compressed sensing: a tutorial
 
-python test.py
-jupyter-notebook tutorial.ipynb
+In this tutorial we will show how to find descriptive parameters to predict materials properties using symbolic regression combined with compressed sensing tools. The relative stability of the zincblende (ZB) versus rocksalt (RS) structure of binary materials is predicted and compared against a model trained with kernel ridge regression.
+
+
