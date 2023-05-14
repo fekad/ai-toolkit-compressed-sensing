@@ -55,6 +55,7 @@ RUN mkdir build && cd build \
  && make install
 
 
+
 # ================================================================================
 # Testing
 # ================================================================================
@@ -72,6 +73,14 @@ RUN mkdir build && cd build \
 USER ${NB_UID}
 WORKDIR /home/${NB_USER}
 
+# ================================================================================
+# Julia
+# ================================================================================
+RUN wget -O install.sh https://install.julialang.org \
+ && chmod +x install.sh \
+ && ./install.sh -y
+
+ENV PATH="$PATH:/home/jovyan/.juliaup/bin/"
 COPY --chown=${NB_UID}:${NB_GID} . .
 # COPY --chown=${NB_UID}:${NB_GID} notebook/assets notebook/compressed_sensing.ipynb ./
 
@@ -84,7 +93,5 @@ COPY --chown=${NB_UID}:${NB_GID} . .
 # ================================================================================
 
 RUN pip install -e .
-
-
-
-
+RUN python3 -c 'import pysr; pysr.install()'
+ENTRYPOINT jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
