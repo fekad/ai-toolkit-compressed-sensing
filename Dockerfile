@@ -35,12 +35,6 @@ RUN mamba install --quiet --yes \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
 
-# RUN pip install --no-cache-dir \
-#     'jupyter-jsmol==2021.3.0'
-#  && fix-permissions "${CONDA_DIR}" \
-#  && fix-permissions "/home/${NB_USER}"
-
-
 # ================================================================================
 #  SISSO++
 # ================================================================================
@@ -54,20 +48,8 @@ RUN mkdir build && cd build \
  && make \
  && make install
 
-
-
 # ================================================================================
-# Testing
-# ================================================================================
-
-# RUN pytest tests/pytest
-# RUN cd build \
-#  && cmake test
-
-# RUN pytest test
-
-# ================================================================================
-#
+# Setup the user
 # ================================================================================
 
 USER ${NB_UID}
@@ -80,18 +62,23 @@ RUN wget -O install.sh https://install.julialang.org \
  && chmod +x install.sh \
  && ./install.sh -y
 
-ENV PATH="$PATH:/home/jovyan/.juliaup/bin/"
+# ================================================================================
+# Copy the Data over
+# ================================================================================
+ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
 COPY --chown=${NB_UID}:${NB_GID} . .
-# COPY --chown=${NB_UID}:${NB_GID} notebook/assets notebook/compressed_sensing.ipynb ./
-
-
-# Fix permissions
-# RUN fix-permissions $TUTORIALS_HOME
 
 # ================================================================================
-# Install all of the package dependencies of the tutorials
+# Install all needed Python Packages
 # ================================================================================
-
 RUN pip install -e .
+
+# ================================================================================
+# Install plotly widget for jupyter lab
+# ================================================================================
+RUN jupyter labextension install plotlywidget
+
+# ================================================================================
+# Install pySR Julia files
+# ================================================================================
 RUN python3 -c 'import pysr; pysr.install()'
-ENTRYPOINT jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
