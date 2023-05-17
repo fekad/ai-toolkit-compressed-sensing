@@ -76,9 +76,11 @@ RUN pip install -e .
 # ================================================================================
 # Install plotly widget for jupyter lab
 # ================================================================================
-RUN jupyter labextension install plotlywidget
+# RUN jupyter labextension install plotlywidget
 
 # ================================================================================
 # Install pySR Julia files
 # ================================================================================
 RUN python3 -c 'import pysr; pysr.install()'
+
+ENV DOCKER_STACKS_JUPYTER_CMD="nbclassic"
