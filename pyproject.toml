@@ -28,7 +28,7 @@ dependencies = [
     'jupyter_jsmol==2021.3.0',
     'plotly',
     'pysr',
-    'ffx',
+    # 'ffx',
     'selenium',
     'tables'
 ]
