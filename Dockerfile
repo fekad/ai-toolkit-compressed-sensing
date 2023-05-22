@@ -150,19 +150,17 @@ RUN --mount=source=.git,target=.git,type=bind \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
 
+# Install pySR Julia files
+RUN python -c 'import pysr; pysr.install("@/opt/julia/environments/v1.8/")'
+
+
 # ================================================================================
 # Setup the user
 # ================================================================================
 
 USER ${NB_UID}
 WORKDIR "${HOME}"
+ENV DOCKER_STACKS_JUPYTER_CMD="nbclassic"
 
 COPY --chown=${NB_UID}:${NB_GID} notebook .
 
-# ================================================================================
-# Install pySR Julia files
-# ================================================================================
-
-RUN python -c 'import pysr; pysr.install("@/opt/julia/environments/v1.8/")'
-
-ENV DOCKER_STACKS_JUPYTER_CMD="nbclassic"
