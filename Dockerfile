@@ -1,4 +1,4 @@
-ARG BUILDER_BASE_IMAGE=jupyter/scipy-notebook:python-3.9
+ARG BUILDER_BASE_IMAGE=quay.io/jupyter/scipy-notebook:python-3.13
 FROM $BUILDER_BASE_IMAGE
 
 # Read more: https://sissopp_developers.gitlab.io/sissopp/quick_start/Installation.html
