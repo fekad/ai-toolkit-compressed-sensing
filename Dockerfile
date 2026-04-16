@@ -31,6 +31,7 @@ RUN mamba install --quiet --yes \
     'scikit-learn' \
     'toml' \
     'pytest' \
+    'setuptools' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
