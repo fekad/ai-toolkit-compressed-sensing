@@ -14,11 +14,9 @@ RUN apt-get update \
     build-essential g++ gfortran cmake git \
     liblapack-dev libblas-dev \
     zlib1g-dev \
-    libboost-mpi-dev libboost-serialization-dev libboost-system-dev libboost-filesystem-dev \
-    libgtest-dev \
-    coinor-clp coinor-libclp-dev \
-    libnlopt-dev \
     pybind11-dev \
+    openmpi-bin \
+    libopenmpi-dev \
     openssh-client \
     dvipng \
  && apt-get clean \
@@ -36,32 +34,36 @@ RUN mamba install --quiet --yes \
     'bokeh' \
     'plotly'\
     'matplotlib' \
+    'anywidget' \
     'colorcet' \
-   #  'jupyter_jsmol==2021.3.0' \
     'ase' \
     'pysr' \
-   #  'ffx' \
     'selenium' \
-   #  'tables' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
+
+RUN pip install --no-cache-dir \
+    'ffx' \
+    'jupyter_jsmol==2021.3.0' 
 
 # ================================================================================
 #  SISSO++
 # ================================================================================
 
+USER ${NB_UID}
 WORKDIR /opt/sissopp
 
-COPY 3rdparty/sissopp .
+COPY --chown=${NB_UID}:${NB_GID} 3rdparty/sissopp .
 
 # CXX=$CXX_COMPILER CC=$C_COMPILER CXXFLAGS=$CXX_FLAGS -j ${N_PROCS}
 RUN ./build_third_party.bash
 
 RUN mkdir build && cd build \
- && cmake -C ../cmake/toolchains/gnu_param_py.cmake -DEXTERNAL_BOOST=ON ../ \
+ && cmake -C ../cmake/toolchains/gnu_param_py.cmake ../ \
  && make \
  && make install
+
 
 # ================================================================================
 # Setup the user
@@ -70,34 +72,36 @@ RUN mkdir build && cd build \
 USER ${NB_UID}
 WORKDIR /home/${NB_USER}
 
+
 # ================================================================================
 # Julia
 # ================================================================================
+
 RUN wget -O install.sh https://install.julialang.org \
-&& chmod +x install.sh \
-&& ./install.sh -y
+ && chmod +x install.sh \
+ && ./install.sh -y \
+ && rm install.sh
 
-# ================================================================================
-# Install all needed Python Packages
-# ================================================================================
-
-RUN pip install 'jupyter_jsmol==2021.3.0' anywidget ffx
 
 # ================================================================================
 # Copy the Data over
 # ================================================================================
+
 ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
-# COPY --chown=${NB_UID}:${NB_GID} . .
 
 COPY --chown=${NB_UID}:${NB_GID} notebook/ .
+
 
 # ================================================================================
 # Install plotly widget for jupyter lab
 # ================================================================================
+
 # RUN jupyter labextension install plotlywidget
+
 
 # ================================================================================
 # Install pySR Julia files
 # ================================================================================
+
 # RUN python3 -c 'import pysr; pysr.install()'
 
