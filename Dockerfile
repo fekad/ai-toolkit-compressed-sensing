@@ -17,7 +17,8 @@ RUN apt-get update \
     libboost-mpi-dev libboost-serialization-dev libboost-system-dev libboost-filesystem-dev \
     libgtest-dev \
     coinor-clp coinor-libclp-dev \
-    # libnlopt-dev \
+    libnlopt-dev \
+    pybind11-dev \
     openssh-client \
     dvipng \
  && apt-get clean \
@@ -32,6 +33,16 @@ RUN mamba install --quiet --yes \
     'toml' \
     'pytest' \
     'setuptools' \
+    'bokeh' \
+    'plotly'\
+    'matplotlib' \
+    'colorcet' \
+    'jupyter_jsmol==2021.3.0' \
+    'ase' \
+    'pysr' \
+    'ffx' \
+    'selenium' \
+    'tables' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
@@ -43,6 +54,9 @@ RUN mamba install --quiet --yes \
 WORKDIR /opt/sissopp
 
 COPY 3rdparty/sissopp .
+
+# CXX=$CXX_COMPILER CC=$C_COMPILER CXXFLAGS=$CXX_FLAGS -j ${N_PROCS}
+RUN ./build_third_party.bash
 
 RUN mkdir build && cd build \
  && cmake -C ../cmake/toolchains/gnu_param_py.cmake -DEXTERNAL_BOOST=ON ../ \
@@ -67,12 +81,14 @@ RUN wget -O install.sh https://install.julialang.org \
 # Copy the Data over
 # ================================================================================
 ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
-COPY --chown=${NB_UID}:${NB_GID} . .
+# COPY --chown=${NB_UID}:${NB_GID} . .
+
+COPY --chown=${NB_UID}:${NB_GID} notebook/ .
 
 # ================================================================================
 # Install all needed Python Packages
 # ================================================================================
-RUN pip install -e .
+# RUN pip install -e .
 
 # ================================================================================
 # Install plotly widget for jupyter lab
@@ -84,4 +100,3 @@ RUN pip install -e .
 # ================================================================================
 RUN python3 -c 'import pysr; pysr.install()'
 
-ENV DOCKER_STACKS_JUPYTER_CMD="nbclassic"

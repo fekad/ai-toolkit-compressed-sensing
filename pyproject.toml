@@ -38,14 +38,4 @@ dependencies = [
 homepage = "https://nomad-lab.eu/"
 repository = "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-compressed-sensing"
 
-[project.optional-dependencies]
-dev = [
-    'pytest',
-    'nbmake'
-]
-
-[tool.setuptools.packages.find]
-where = ["src"]
-namespaces = false
-
 [tool.setuptools_scm]
