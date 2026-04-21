@@ -98,5 +98,5 @@ COPY --chown=${NB_UID}:${NB_GID} notebook/ .
 # ================================================================================
 # Install pySR Julia files
 # ================================================================================
-RUN python3 -c 'import pysr; pysr.install()'
+# RUN python3 -c 'import pysr; pysr.install()'
 
