@@ -37,12 +37,12 @@ RUN mamba install --quiet --yes \
     'plotly'\
     'matplotlib' \
     'colorcet' \
-    'jupyter_jsmol==2021.3.0' \
+   #  'jupyter_jsmol==2021.3.0' \
     'ase' \
     'pysr' \
-    'ffx' \
+   #  'ffx' \
     'selenium' \
-    'tables' \
+   #  'tables' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
