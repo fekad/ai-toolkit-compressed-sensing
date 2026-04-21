@@ -1,0 +1,3 @@
+[submodule "3rdparty/sissopp"]
+	path = 3rdparty/sissopp
+	url = git@gitlab.com:sissopp_developers/sissopp.git
