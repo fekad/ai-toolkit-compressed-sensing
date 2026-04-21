@@ -41,7 +41,7 @@ def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None
 
     colors = itertools.cycle(palette)
 
-    p = figure(plot_width=600, plot_height=300, tools=[hover, "box_zoom", "pan", "reset"],
+    p = figure(width=600, height=300, tools=[hover, "box_zoom", "pan", "reset"],
                x_axis_label=x_label, y_axis_label=y_label)
 
     # plot reference diagonal
@@ -59,6 +59,6 @@ def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None
             )
         )
 
-        p.circle('x', 'y', size=8, source=source, legend=legend[i], color=color)
+        p.circle('x', 'y', size=8, source=source, legend_label=legend[i], color=color)
     p.legend.location = 'top_left'
     show(p)

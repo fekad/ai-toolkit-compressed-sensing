@@ -1,3 +1,9 @@
+notebook/data/
+notebook/feature_space
+notebook/pySR
+notebook/SISSO_CV
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

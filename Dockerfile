@@ -74,8 +74,14 @@ WORKDIR /home/${NB_USER}
 # Julia
 # ================================================================================
 RUN wget -O install.sh https://install.julialang.org \
- && chmod +x install.sh \
- && ./install.sh -y
+&& chmod +x install.sh \
+&& ./install.sh -y
+
+# ================================================================================
+# Install all needed Python Packages
+# ================================================================================
+
+RUN pip install 'jupyter_jsmol==2021.3.0' anywidget ffx
 
 # ================================================================================
 # Copy the Data over
@@ -84,11 +90,6 @@ ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
 # COPY --chown=${NB_UID}:${NB_GID} . .
 
 COPY --chown=${NB_UID}:${NB_GID} notebook/ .
-
-# ================================================================================
-# Install all needed Python Packages
-# ================================================================================
-# RUN pip install -e .
 
 # ================================================================================
 # Install plotly widget for jupyter lab
