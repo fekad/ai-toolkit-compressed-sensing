@@ -37,15 +37,15 @@ RUN mamba install --quiet --yes \
     'anywidget' \
     'colorcet' \
     'ase' \
-    'pysr' \
     'selenium' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
 
 RUN pip install --no-cache-dir \
+    'pysr' \
     'ffx' \
-    'jupyter_jsmol==2021.3.0' 
+    'jupyter_jsmol==2021.3.0'
 
 # ================================================================================
 #  SISSO++
@@ -82,26 +82,19 @@ RUN wget -O install.sh https://install.julialang.org \
  && ./install.sh -y \
  && rm install.sh
 
-
-# ================================================================================
-# Copy the Data over
-# ================================================================================
-
 ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
-
-COPY --chown=${NB_UID}:${NB_GID} notebook/ .
-
-
-# ================================================================================
-# Install plotly widget for jupyter lab
-# ================================================================================
-
-# RUN jupyter labextension install plotlywidget
 
 
 # ================================================================================
 # Install pySR Julia files
 # ================================================================================
 
-# RUN python3 -c 'import pysr; pysr.install()'
+RUN python3 -c 'import pysr; pysr.install()'
+
+
+# ================================================================================
+# Copy the Data over
+# ================================================================================
+
+COPY --chown=${NB_UID}:${NB_GID} notebook/ .
 
