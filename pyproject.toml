@@ -31,7 +31,8 @@ dependencies = [
     'ffx',
     'selenium',
     'tables',
-    'setuptools'
+    'setuptools',
+    'nglview'
 ]
 
 [project.urls]
