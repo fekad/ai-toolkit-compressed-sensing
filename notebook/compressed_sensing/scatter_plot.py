@@ -1,19 +1,20 @@
-
-from bokeh.models import TapTool, CustomJS, ColumnDataSource, HoverTool, ColumnDataSource
-from bokeh.io import show, output_notebook
-from bokeh.plotting import figure, show
-from bokeh.embed import components
 import itertools
-from bokeh.palettes import Dark2_5 as palette
+
 import numpy as np
-output_notebook()
+
+from bokeh.models import ColumnDataSource, HoverTool, ColumnDataSource
+from bokeh.plotting import figure, show
+from bokeh.palettes import Dark2_5 as palette
+
 
 def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None, legend=None, unit=None):
-    # if xs ist not list of lists/arrays make it so, as later the function iterates over xs and ys
+
+    # if xs is not a list of lists/arrays, make it so, as later the function iterates over xs and ys
     if not isinstance(xs[0], (list, np.ndarray)):
         xs = [xs]
         ys = [ys]
-    # make sure that xs and ys ist list (of lists/arrays) as later the function will
+
+    # make sure that xs and ys are lists (of lists/arrays), as later the function will
     # do the list operation xs+ys
     elif not isinstance(xs, list) or not isinstance(ys, list):
         xs = list(xs)
@@ -59,6 +60,7 @@ def show_scatter_plot(xs, ys, data_point_labels=None, x_label=None, y_label=None
             )
         )
 
-        p.circle('x', 'y', size=8, source=source, legend_label=legend[i], color=color)
+        p.scatter('x', 'y', size=8, source=source,
+                  legend_label=legend[i], color=color)
     p.legend.location = 'top_left'
     show(p)
