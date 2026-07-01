@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = 'compressed_sensing'
+description = 'Symbolic regression via compressed sensing: a tutorial'
+readme = "README.md"
+authors = [
+    { name = "Emre Ahmetcik" },
+    { name = "Angelo Ziletti" },
+    { name = "Runhai Ouyang" },
+    { name = "Luigi Sbailò" },
+    { name = "Matthias Scheffler" },
+    { name = "Luca M. Ghiringhelli" }
+]
+dynamic = ["version"]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.13"
+dependencies = [
+    'ase',
+    'numpy',
+    'scipy',
+    'pandas',
+    'scikit-learn',
+    'toml',
+    'bokeh',
+    'plotly',
+    'matplotlib',
+    'anywidget',
+    'nglview'
+]
+
+[project.urls]
+homepage = "https://nomad-lab.eu/"
+repository = "https://gitlab.mpcdf.mpg.de/nomad-lab/analytics-compressed-sensing"
+
+[tool.setuptools_scm]
