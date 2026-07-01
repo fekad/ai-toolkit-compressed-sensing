@@ -18,20 +18,16 @@ dynamic = ["version"]
 license = { text = "Apache-2.0" }
 requires-python = ">=3.13"
 dependencies = [
-    'pandas',
-    'matplotlib',
-    'scikit-learn',
-    'bokeh',
     'ase',
     'numpy',
-    'colorcet',
-    'jupyter_jsmol==2021.3.0',
+    'scipy',
+    'pandas',
+    'scikit-learn',
+    'toml',
+    'bokeh',
     'plotly',
-    'pysr',
-    'ffx',
-    'selenium',
-    'tables',
-    'setuptools',
+    'matplotlib',
+    'anywidget',
     'nglview'
 ]
 

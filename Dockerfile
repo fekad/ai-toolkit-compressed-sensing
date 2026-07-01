@@ -23,30 +23,26 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 RUN mamba install --quiet --yes \
+    'ase' \
     'numpy' \
-    'pandas' \
     'scipy' \
+    'pandas' \
     'seaborn' \
     'scikit-learn' \
     'toml' \
-    'pytest' \
-    'setuptools' \
     'bokeh' \
     'plotly'\
     'matplotlib' \
     'anywidget' \
-    'colorcet' \
-    'ase' \
-    'selenium' \
     'nglview' \
  && mamba clean --all -f -y \
  && fix-permissions "${CONDA_DIR}" \
  && fix-permissions "/home/${NB_USER}"
 
-RUN pip install --no-cache-dir \
-    'pysr' \
-    'ffx' \
-    'jupyter_jsmol==2021.3.0'
+
+# Fixing nglview package (https://github.com/nglviewer/nglview/issues/1172#issuecomment-4476260864)
+RUN sed -i "s/__frontend_version__ = '4.0'/__frontend_version__ = '3.1.5'/"  "${CONDA_DIR}/lib/python3.13/site-packages/nglview/_frontend.py"
+
 
 # ================================================================================
 #  SISSO++
@@ -75,27 +71,11 @@ WORKDIR /home/${NB_USER}
 
 
 # ================================================================================
-# Julia
-# ================================================================================
-
-RUN wget -O install.sh https://install.julialang.org \
- && chmod +x install.sh \
- && ./install.sh -y \
- && rm install.sh
-
-ENV PATH="$PATH:/home/${NB_USER}/.juliaup/bin/"
-
-
-# ================================================================================
-# Install pySR Julia files
-# ================================================================================
-
-RUN python3 -c 'import pysr; pysr.install()'
-
-
-# ================================================================================
 # Copy the Data over
 # ================================================================================
 
 COPY --chown=${NB_UID}:${NB_GID} notebook/ .
+
+
+
 
